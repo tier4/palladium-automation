@@ -1,6 +1,6 @@
 # Palladium Automation
 
-ETX/Palladium環境での自動化ツール。Tier4ハードウェアプロジェクト（hornet、gion等）のエミュレーション・検証作業を効率化します。
+**Hornet GPU/GPGPU開発のラッパープロジェクト**。SSH経由のga53pd01 Palladiumエミュレータ制御と、Serena MCPによるVerilog/SystemVerilog解析を統合し、RTL開発からシミュレーション実行までをワンストップで実現します。
 
 ## 重要: プロジェクト内完結の原則
 
@@ -31,33 +31,40 @@ ETX/Palladium環境での自動化ツール。Tier4ハードウェアプロジ�
 
 ### 主要機能
 
+- ✅ **Hornet統合**: hornetプロジェクトをgit cloneで組み込み
+- ✅ **Serena MCP**: Verilog/SystemVerilogのシンボルベース解析
 - ✅ **SSH同期実行方式**: 高速（2-3秒）・シンプル・GUI操作不要
 - ✅ **リアルタイム出力**: 実行中の出力をその場で確認
 - ✅ **ローカルアーカイブ**: `.archive/YYYYMM/` に自動保存
-- ✅ **リモートファイル不要**: SSH接続のみで完結
-- ✅ **複数人並行実行対応**: タスクIDで識別
+- ✅ **ワンストップ開発**: RTL解析→スクリプト生成→実行→結果分析
 
 ## ディレクトリ構造
 
 ```
 palladium-automation/
+├── hornet/                    # git clone されたhornetプロジェクト
+│   ├── src/                   # Verilog/SystemVerilog RTL
+│   ├── eda/                   # EDA tool configs, testbenches
+│   └── tb/                    # Testbenches
 ├── scripts/
 │   ├── claude_to_ga53pd01.sh  # SSH統合スクリプト（推奨）
 │   └── .legacy/               # レガシースクリプト（xdotool方式）
-├── .claude/
-│   └── etx_tasks/             # Claude Codeが生成したタスクの一時保存
+├── .serena/                   # Serena MCP設定
+│   ├── project.yml            # Verilog言語設定
+│   └── memories/              # プロジェクトメモリ
 ├── workspace/
 │   └── etx_results/
 │       └── .archive/          # ローカル永続保存（YYYYMM別）
 ├── docs/
 │   ├── setup.md               # セットアップガイド
+│   ├── mcp_setup_cli.md       # Serena MCP設定ガイド
 │   ├── ssh_direct_retrieval_test.md  # SSH直接取得テスト結果
-│   ├── memo.md                # 技術検討メモ
-│   ├── plan.md                # 実装プラン
-│   └── .legacy/               # レガシードキュメント（GitHub統合方式）
+│   └── .legacy/               # レガシードキュメント
 ├── CLAUDE.md                  # Claude Code向けリポジトリガイド
 └── README.md                  # このファイル
 ```
+
+**注意**: `hornet/`ディレクトリは`.gitignore`に追加されており、このリポジトリのGit管理対象外です。
 
 ## 環境要件
 
@@ -104,7 +111,26 @@ git clone https://github.com/tier4/palladium-automation.git
 cd palladium-automation
 ```
 
-### 3. 接続テスト
+### 3. Hornetプロジェクトのクローン
+
+```bash
+# palladium-automation内にhornetをクローン
+git clone https://github.com/tier4/hornet.git
+```
+
+### 4. Serena MCP設定（オプション）
+
+Verilog/SystemVerilog解析を使用する場合：
+
+```bash
+# Serena MCPを追加
+claude-serena
+# または手動で ~/.claude.json に設定
+```
+
+詳細は [docs/mcp_setup_cli.md](docs/mcp_setup_cli.md) を参照してください。
+
+### 5. 接続テスト
 
 ```bash
 # ga53pd01への接続確認
