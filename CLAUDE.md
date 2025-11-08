@@ -206,51 +206,32 @@ xdotoolを使用してETXターミナルでスクリプトを実行する旧方�
 4. 結果をGitHubにpush
 5. ローカルで結果取得
 
-## MCP Server統合
+## Claude Codeからの使用方法
 
-### etx-automation MCPサーバー
+SSH同期実行がシンプルなため、MCPサーバーは不要です。Claude CodeのBashツールから直接スクリプトを実行できます。
 
-Claude CodeがETXを直接制御できるようにするカスタムMCPサーバーを提供します。
-
-**場所**: `mcp-servers/etx-automation/`
-
-**提供ツール**:
-- `execute_on_etx`: ETXで単一コマンド実行
-- `run_script_on_etx`: スクリプト転送・実行・GitHub結果回収（タイムアウト設定可能）
-- `activate_etx_window`: ETXウィンドウのアクティブ化
-- `list_windows`: ウィンドウ一覧表示
-- `test_etx_connection`: 接続テスト
-
-**run_script_on_etxの新機能**:
-- GitHub経由の自動結果回収
-- タスクIDディレクトリ方式
-- 長期実行タスク対応（`timeout`パラメータ）
-- ローカルアーカイブ自動保存
-- 取得後の自動クリーンアップ
-
-**セットアップ**:
+**基本的な使用方法**:
 ```bash
-cd mcp-servers/etx-automation
-npm install
+# Claude Codeが生成したスクリプトを実行
+./scripts/claude_to_ga53pd01.sh /path/to/task_script.sh
 ```
 
-**Claude Code (CLI) への追加**:
-```bash
-# プロジェクトディレクトリで実行
-cd /home/khenmi/palladium-automation
-claude mcp add --transport stdio etx-automation -- node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js
+**Claude Codeでの実行例**:
+```
+ユーザー: "ga53pd01でホスト名を確認して"
+
+Claude Code:
+1. タスクスクリプトを生成（/tmp/check_hostname.sh）
+2. Bashツールで実行:
+   ./scripts/claude_to_ga53pd01.sh /tmp/check_hostname.sh
+3. リアルタイムで結果を確認
 ```
 
-**確認**:
-```bash
-claude mcp list
-# 出力: etx-automation: node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js - ✓ Connected
-```
-
-**注**:
-- プロジェクトパスは環境に合わせて調整してください
-- MCPサーバーはプロジェクトごとに自動的に読み込まれます（`~/.claude.json`に保存）
-- Claude Desktop（デスクトップアプリ）を使用する場合は、`~/.config/Claude/claude_desktop_config.json`に設定してください
+**特徴**:
+- MCPサーバー不要（シンプル）
+- Bashツールで直接実行
+- リアルタイムで出力確認
+- 自動的にローカルアーカイブに保存
 
 ## 開発ワークフロー
 
