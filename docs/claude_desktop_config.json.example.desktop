@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "etx-automation": {
+      "command": "node",
+      "args": ["/home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js"],
+      "env": {
+        "DEBUG": "0"
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "your_github_token_here"
+      }
+    },
+    "local-filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/khenmi/workspace"
+      ]
+    }
+  }
+}

@@ -1,0 +1,229 @@
+# Palladium Claude Code 統合プロジェクト
+
+Palladium環境(ETX)での制約下で、ローカルのClaude Codeを活用し、リモート環境を効率的に制御する自動化ワークフローです。
+
+## 重要: プロジェクト内完結の原則
+
+**このプロジェクトはすべての依存関係とツールをプロジェクト内で管理します。**
+
+- ✅ グローバルインストール不要（`npm link` 等は使用しない）
+- ✅ プロジェクトをクローンして `npm install` するだけで動作
+- ✅ チームメンバー全員が同じ環境で作業可能
+- ✅ システム全体の環境を汚染しない
+
+## 概要
+
+このプロジェクトは、特殊なネットワーク制約下(ローカルからリモートへの片方向SCP転送のみ可能)で、GUI自動操作とGitHub経由の結果回収を組み合わせた自動化を実現します。
+
+### アーキテクチャ
+
+```
+[ローカル RHEL8 + GNOME]
+    ↓ Claude Code動作
+    ↓ スクリプト生成
+    ↓ SCP転送
+    →→→ [リモート RHEL8 (ETX/Palladium)]
+            ↓ GUI自動操作で実行
+            ↓ 結果をGitHub経由で返却
+            ↓
+[ローカル] ←←← GitHub経由で結果取得
+```
+
+## ディレクトリ構造
+
+```
+palladium_claude/
+├── scripts/                    # 自動化スクリプト
+│   ├── etx_automation.sh      # GUI自動操作スクリプト
+│   ├── capture_etx_window.sh  # ETX画面キャプチャスクリプト
+│   └── claude_to_etx.sh       # Claude Code統合スクリプト
+├── mcp-servers/               # カスタムMCPサーバー
+│   └── etx-automation/        # ETX自動化MCPサーバー
+│       ├── index.js
+│       └── package.json
+├── .claude/
+│   └── etx_tasks/             # Claude Codeが生成したタスクの一時保存
+├── workspace/
+│   └── etx_results/           # GitHubから取得した実行結果
+├── docs/
+│   ├── memo.md                # 技術検討メモ
+│   ├── setup.md               # セットアップガイド
+│   └── plan.md                # 実装プラン
+├── CLAUDE.md                  # Claude Code向けリポジトリガイド
+└── README.md                  # このファイル
+```
+
+## 環境要件
+
+### ローカル環境
+- OS: RHEL8 + GNOME
+- 必須ツール:
+  - xdotool
+  - wmctrl
+  - xclip
+  - netpbm-progs（画面キャプチャ用）
+  - Node.js (MCP Server用)
+  - Git
+
+### リモート環境(ETX)
+- OS: RHEL8
+- Exceed TurboX Client経由でアクセス
+- ETX Xterm起動可能（Start Xterm）
+
+## クイックスタート
+
+> 📖 **詳細なセットアップ手順**: [docs/setup.md](docs/setup.md) を参照してください
+
+### 1. 必要なツールのインストール
+
+```bash
+# GUI自動操作ツール
+sudo dnf install -y xdotool wmctrl xclip
+
+# 画面キャプチャツール
+sudo dnf install -y netpbm-progs
+
+# Node.jsがない場合
+# sudo dnf install -y nodejs npm
+```
+
+### 2. DISPLAY環境変数の設定
+
+```bash
+export DISPLAY=:2  # 環境に応じて調整
+```
+
+### 3. プロジェクトのセットアップ
+
+```bash
+cd ~/palladium_claude
+
+# MCP Serverのセットアップ
+cd mcp-servers/etx-automation
+npm install
+cd ../..
+```
+
+### 4. Claude Code (CLI) への追加
+
+```bash
+cd /home/khenmi/palladium_claude
+claude mcp add --transport stdio etx-automation -- node /home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js
+```
+
+確認：
+```bash
+claude mcp list
+# 出力: etx-automation: ... - ✓ Connected
+```
+
+**注意**:
+- プロジェクトパスは環境に合わせて調整してください
+- Claude Desktop（デスクトップアプリ）を使用する場合は[docs/setup.md](docs/setup.md)を参照
+
+## 使用方法
+
+### 事前準備: ETX Xterm起動
+
+**重要**: スクリプトを実行する前に、ETX TurboX Dashboardから「Start Xterm」をクリックして、ETX Xtermウィンドウを起動してください。
+
+### GUI自動操作スクリプト
+
+```bash
+# ウィンドウ一覧確認
+./scripts/etx_automation.sh list
+
+# ETXウィンドウをアクティブ化
+./scripts/etx_automation.sh activate
+
+# 単一コマンド実行
+./scripts/etx_automation.sh exec 'hostname'
+
+# スクリプト実行（行単位で転送）
+./scripts/etx_automation.sh script ./my_script.sh
+```
+
+**重要**:
+- スクリプトは `$HOME/.etx_tmp/` ディレクトリに保存されます（複数ユーザー対応）
+- ファイル名はタイムスタンプ + プロセスIDでユニークになります
+
+### ETX画面キャプチャ
+
+```bash
+# デフォルトのファイル名でキャプチャ
+./scripts/capture_etx_window.sh
+
+# ファイル名を指定してキャプチャ
+./scripts/capture_etx_window.sh /path/to/output.png
+```
+
+**用途**:
+- ETX Xtermの実行結果を視覚的に確認
+- デバッグ時のスクリーンショット取得
+- Claude Codeから画像として確認可能
+
+### Claude Code統合
+
+```bash
+# Claude Codeが生成したスクリプトを実行
+./scripts/claude_to_etx.sh /path/to/task_script.sh
+```
+
+### Claude CodeのMCPツール
+
+Claude Code内で以下のツールが利用可能:
+- `execute_on_etx`: ETXで単一コマンド実行
+- `run_script_on_etx`: スクリプト転送・実行・結果回収
+- `activate_etx_window`: ETXウィンドウのアクティブ化
+
+## トラブルシューティング
+
+### xdotoolが動作しない
+
+```bash
+# X11ディスプレイ確認
+echo $DISPLAY
+
+# 権限設定
+xhost +SI:localuser:$(whoami)
+
+# ウィンドウ検索テスト
+wmctrl -l
+xdotool search --name "Terminal"
+```
+
+### SCP接続エラー
+
+```bash
+# SSH鍵確認
+ssh-add -l
+
+# 手動転送テスト
+scp /tmp/test.txt khenmi@ip-172-17-34-126:/tmp/
+```
+
+## 開発ステータス
+
+- [x] プロジェクト構造の作成
+- [x] 環境セットアップ
+- [x] コアスクリプトの実装
+- [x] MCP Serverの実装
+- [ ] 統合テスト
+- [x] ドキュメント作成
+
+詳細な実装プランは [`docs/plan.md`](docs/plan.md) を参照してください。
+
+## ドキュメント
+
+- [セットアップガイド](docs/setup.md) - 詳細なセットアップ手順
+- [実装プラン](docs/plan.md) - 開発計画と進捗
+- [CLAUDE.md](CLAUDE.md) - Claude Code向けガイド
+- [技術メモ](docs/memo.md) - 初期の技術検討
+
+## ライセンス
+
+(ライセンス情報を追加)
+
+## 貢献
+
+(貢献ガイドラインを追加)
