@@ -530,7 +530,7 @@ EOF
 # GitHubでリポジトリを作成: https://github.com/tier4/gion-automation
 
 # ローカル環境での初回クローン確認
-cd ~/palladium_claude/workspace
+cd ~/palladium-automation/workspace
 git clone https://github.com/tier4/gion-automation.git etx_results
 cd etx_results
 mkdir -p results
@@ -568,7 +568,7 @@ git config --global user.name "Your Name"
 git config --global user.email "your.email@example.com"
 
 # リポジトリへのアクセス確認
-cd ~/palladium_claude/workspace/etx_results
+cd ~/palladium-automation/workspace/etx_results
 git pull origin main
 ```
 

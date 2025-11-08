@@ -10,18 +10,18 @@ Claude Code CLIを使用する場合は、`claude mcp add`コマンドでMCPサ�
 
 1. **プロジェクトディレクトリに移動**:
 ```bash
-cd /home/khenmi/palladium_claude
+cd /home/khenmi/palladium-automation
 ```
 
 2. **MCPサーバーを追加**:
 ```bash
-claude mcp add --transport stdio etx-automation -- node /home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js
+claude mcp add --transport stdio etx-automation -- node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js
 ```
 
 3. **確認**:
 ```bash
 claude mcp list
-# 出力: etx-automation: node /home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js - ✓ Connected
+# 出力: etx-automation: node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js - ✓ Connected
 ```
 
 ### 設定の保存先
@@ -31,13 +31,13 @@ claude mcp list
 ```json
 {
   "projects": {
-    "/home/khenmi/palladium_claude": {
+    "/home/khenmi/palladium-automation": {
       "mcpServers": {
         "etx-automation": {
           "type": "stdio",
           "command": "node",
           "args": [
-            "/home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js"
+            "/home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js"
           ],
           "env": {}
         }
@@ -69,7 +69,7 @@ Claude Desktopアプリケーションを使用する場合は、設定ファイ
 1. **設定ファイルを作成**:
 ```bash
 mkdir -p ~/.config/Claude
-cp /home/khenmi/palladium_claude/docs/claude_desktop_config.json.example.desktop ~/.config/Claude/claude_desktop_config.json
+cp /home/khenmi/palladium-automation/docs/claude_desktop_config.json.example.desktop ~/.config/Claude/claude_desktop_config.json
 ```
 
 2. **設定ファイルを編集**:
@@ -83,7 +83,7 @@ nano ~/.config/Claude/claude_desktop_config.json
   "mcpServers": {
     "etx-automation": {
       "command": "node",
-      "args": ["/home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js"],
+      "args": ["/home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js"],
       "env": {
         "DEBUG": "0"
       }

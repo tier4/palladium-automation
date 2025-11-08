@@ -70,8 +70,8 @@ sudo dnf install -y netpbm-progs
 
 ```bash
 cd ~
-git clone https://github.com/your-org/palladium_claude.git
-cd palladium_claude
+git clone https://github.com/your-org/palladium-automation.git
+cd palladium-automation
 ```
 
 ### 3. ディレクトリ構造の確認
@@ -82,7 +82,7 @@ tree -L 2 -a
 
 期待される構造:
 ```
-palladium_claude/
+palladium-automation/
 ├── .claude/
 │   └── etx_tasks/
 ├── scripts/
@@ -111,7 +111,7 @@ chmod +x mcp-servers/etx-automation/index.js
 ### 1. MCP Serverのインストール
 
 ```bash
-cd ~/palladium_claude/mcp-servers/etx-automation
+cd ~/palladium-automation/mcp-servers/etx-automation
 npm install
 ```
 
@@ -152,7 +152,7 @@ nano ~/.config/Claude/claude_desktop_config.json
   "mcpServers": {
     "etx-automation": {
       "command": "node",
-      "args": ["/home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js"]
+      "args": ["/home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js"]
     }
   }
 }
@@ -163,14 +163,14 @@ nano ~/.config/Claude/claude_desktop_config.json
 #### Claude Code (CLI) を使用する場合（推奨）
 
 ```bash
-cd /home/khenmi/palladium_claude
-claude mcp add --transport stdio etx-automation -- node /home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js
+cd /home/khenmi/palladium-automation
+claude mcp add --transport stdio etx-automation -- node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js
 ```
 
 確認:
 ```bash
 claude mcp list
-# 出力: etx-automation: node /home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js - ✓ Connected
+# 出力: etx-automation: node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js - ✓ Connected
 ```
 
 #### Claude Desktop (デスクトップアプリ) を使用する場合
@@ -182,7 +182,7 @@ claude mcp list
   "mcpServers": {
     "etx-automation": {
       "command": "node",
-      "args": ["/home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js"],
+      "args": ["/home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js"],
       "env": {
         "DEBUG": "0"
       }
@@ -208,7 +208,7 @@ claude mcp list
 ```
 
 **重要**:
-- `/home/khenmi/palladium_claude` の部分は、あなたの環境のプロジェクトパスに合わせて変更してください
+- `/home/khenmi/palladium-automation` の部分は、あなたの環境のプロジェクトパスに合わせて変更してください
 - Claude Code (CLI) と Claude Desktop (デスクトップアプリ) は異なる設定ファイルを使用します
 
 ### 5. Claude Codeの再起動（Claude Desktopの場合）
@@ -271,7 +271,7 @@ wmctrl -l | grep ga53
 ### 1. 基本コマンドテスト
 
 ```bash
-cd ~/palladium_claude
+cd ~/palladium-automation
 
 # ウィンドウ一覧表示
 ./scripts/etx_automation.sh list
@@ -416,13 +416,13 @@ ssh-keyscan ip-172-17-34-126 >> ~/.ssh/known_hosts
 **解決方法**:
 ```bash
 # プロジェクトディレクトリの権限確認
-ls -la ~/palladium_claude/mcp-servers/etx-automation
+ls -la ~/palladium-automation/mcp-servers/etx-automation
 
 # 権限を修正
-chmod -R u+w ~/palladium_claude/mcp-servers/etx-automation
+chmod -R u+w ~/palladium-automation/mcp-servers/etx-automation
 
 # 再度インストール
-cd ~/palladium_claude/mcp-servers/etx-automation
+cd ~/palladium-automation/mcp-servers/etx-automation
 rm -rf node_modules package-lock.json
 npm install
 ```
@@ -441,10 +441,10 @@ npm install
 **デバッグ方法**:
 ```bash
 # MCPサーバーを直接実行してエラー確認
-node /home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js
+node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js
 
 # 依存関係の確認
-ls /home/khenmi/palladium_claude/mcp-servers/etx-automation/node_modules/@modelcontextprotocol
+ls /home/khenmi/palladium-automation/mcp-servers/etx-automation/node_modules/@modelcontextprotocol
 
 # JSON構文チェック
 cat ~/.config/Claude/claude_desktop_config.json | jq .

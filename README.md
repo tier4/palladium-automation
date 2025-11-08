@@ -1,6 +1,6 @@
-# Palladium Claude Code 統合プロジェクト
+# Palladium Automation
 
-Palladium環境(ETX)での制約下で、ローカルのClaude Codeを活用し、リモート環境を効率的に制御する自動化ワークフローです。
+ETX/Palladium環境での自動化ツール。Tier4ハードウェアプロジェクト（hornet、gion等）のエミュレーション・検証作業を効率化します。
 
 ## 重要: プロジェクト内完結の原則
 
@@ -32,7 +32,7 @@ Palladium環境(ETX)での制約下で、ローカルのClaude Codeを活用し�
 ## ディレクトリ構造
 
 ```
-palladium_claude/
+palladium-automation/
 ├── scripts/                    # 自動化スクリプト
 │   ├── etx_automation.sh      # GUI自動操作スクリプト
 │   ├── capture_etx_window.sh  # ETX画面キャプチャスクリプト
@@ -96,7 +96,7 @@ export DISPLAY=:2  # 環境に応じて調整
 ### 3. プロジェクトのセットアップ
 
 ```bash
-cd ~/palladium_claude
+cd ~/palladium-automation
 
 # MCP Serverのセットアップ
 cd mcp-servers/etx-automation
@@ -107,8 +107,8 @@ cd ../..
 ### 4. Claude Code (CLI) への追加
 
 ```bash
-cd /home/khenmi/palladium_claude
-claude mcp add --transport stdio etx-automation -- node /home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js
+cd /home/khenmi/palladium-automation
+claude mcp add --transport stdio etx-automation -- node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js
 ```
 
 確認：

@@ -64,7 +64,7 @@ echo $DISPLAY  # X11確認
 #### 1.2 ディレクトリ構造の作成
 
 ```bash
-cd /home/khenmi/palladium_claude
+cd /home/khenmi/palladium-automation
 
 # プロジェクト内にディレクトリを作成
 mkdir -p scripts
@@ -82,7 +82,7 @@ touch workspace/etx_results/.gitkeep
 
 **期待される構造**:
 ```
-palladium_claude/
+palladium-automation/
 ├── scripts/
 │   ├── etx_automation.sh      # GUI自動操作スクリプト
 │   └── claude_to_etx.sh       # Claude Code統合スクリプト
@@ -125,7 +125,7 @@ palladium_claude/
 
 **テスト方法**:
 ```bash
-cd /home/khenmi/palladium_claude
+cd /home/khenmi/palladium-automation
 
 # ウィンドウ検索テスト
 ./scripts/etx_automation.sh activate
@@ -162,7 +162,7 @@ echo '#!/bin/bash\necho "Hello from remote"' > /tmp/test.sh
 
 **テスト方法**:
 ```bash
-cd /home/khenmi/palladium_claude
+cd /home/khenmi/palladium-automation
 
 # 簡単なタスクスクリプトを作成
 echo '#!/bin/bash\ndate\nhostname' > .claude/etx_tasks/test_task.sh
@@ -205,7 +205,7 @@ echo '#!/bin/bash\ndate\nhostname' > .claude/etx_tasks/test_task.sh
 
 **セットアップ**:
 ```bash
-cd /home/khenmi/palladium_claude/mcp-servers/etx-automation
+cd /home/khenmi/palladium-automation/mcp-servers/etx-automation
 npm install
 npm link
 ```
@@ -219,7 +219,7 @@ npm link
   "mcpServers": {
     "etx-automation": {
       "command": "node",
-      "args": ["/home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js"]
+      "args": ["/home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js"]
     },
     "github": {
       "command": "npx",

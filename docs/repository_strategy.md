@@ -3,7 +3,7 @@
 ## 背景
 
 現在のプロジェクト:
-- **ローカルパス**: `/home/khenmi/palladium_claude`
+- **ローカルパス**: `/home/khenmi/palladium-automation`
 - **Git管理**: なし（まだリポジトリ化されていない）
 - **結果取得用リポジトリ**: `tier4/gion-automation`（計画中）
 
@@ -35,7 +35,7 @@ tier4/gion-automation/
 
 #### ローカル配置
 ```bash
-/home/khenmi/palladium_claude/  # 現在のディレクトリ
+/home/khenmi/palladium-automation/  # 現在のディレクトリ
 ```
 
 #### ETXリモート配置
@@ -143,7 +143,7 @@ tier4/gion-automation/
 
 ```bash
 # 現在のディレクトリをGit管理下に
-cd /home/khenmi/palladium_claude
+cd /home/khenmi/palladium-automation
 
 # リモートリポジトリを追加
 git init
@@ -151,8 +151,8 @@ git remote add origin https://github.com/tier4/gion-automation.git
 
 # または既存リポジトリをクローン
 cd /home/khenmi
-git clone https://github.com/tier4/gion-automation.git palladium_claude
-cd palladium_claude
+git clone https://github.com/tier4/gion-automation.git palladium-automation
+cd palladium-automation
 ```
 
 #### ETXリモート環境
@@ -291,7 +291,7 @@ git push origin main
 
 ```bash
 # ローカル環境で実行
-cd /home/khenmi/palladium_claude
+cd /home/khenmi/palladium-automation
 
 # Git初期化
 git init
@@ -315,8 +315,8 @@ git push -u origin main
 ```bash
 # 既存リポジトリがある場合はクローン
 cd /home/khenmi
-git clone https://github.com/tier4/gion-automation.git palladium_claude
-cd palladium_claude
+git clone https://github.com/tier4/gion-automation.git palladium-automation
+cd palladium-automation
 
 # MCP Serverセットアップ
 cd mcp-servers/etx-automation
@@ -383,11 +383,11 @@ git push origin main
 ```bash
 # ローカルで既存リポジトリをクローン
 cd /home/khenmi
-git clone https://github.com/tier4/gion-automation.git palladium_claude
-cd palladium_claude
+git clone https://github.com/tier4/gion-automation.git palladium-automation
+cd palladium-automation
 
 # 現在のファイルをマージ
-cp -r /home/khenmi/palladium_claude_old/* .
+cp -r /home/khenmi/palladium-automation_old/* .
 git add .
 git commit -m "feat: integrate Palladium Claude Code automation"
 git push origin main
@@ -451,7 +451,7 @@ git push origin main
 | 項目 | 内容 |
 |------|------|
 | **リポジトリ** | `tier4/gion-automation`（単一リポジトリ） |
-| **ローカルパス** | `/home/khenmi/palladium_claude` |
+| **ローカルパス** | `/home/khenmi/palladium-automation` |
 | **ETXパス** | `/home/henmi/.etx_tmp/etx_results` |
 | **結果ディレクトリ** | `results/`（Git管理） |
 | **ブランチ戦略** | `main`（結果とスクリプト共存） |

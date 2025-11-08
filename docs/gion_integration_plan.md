@@ -26,7 +26,7 @@ tier4/gion/
 ### 統合する自動化ツール
 
 ```
-palladium_claude/
+palladium-automation/
 ├── scripts/            # ETX自動化スクリプト
 ├── mcp-servers/        # Claude Code MCP統合
 ├── results/            # 自動化実行結果（新規）
@@ -255,15 +255,15 @@ cd /home/khenmi/gion
 # automation/ ディレクトリ作成
 mkdir -p automation
 
-# palladium_claude の内容をコピー
-cp -r /home/khenmi/palladium_claude/scripts automation/
-cp -r /home/khenmi/palladium_claude/mcp-servers automation/
-cp -r /home/khenmi/palladium_claude/.claude automation/
-cp -r /home/khenmi/palladium_claude/docs automation/
-cp -r /home/khenmi/palladium_claude/workspace automation/
+# palladium-automation の内容をコピー
+cp -r /home/khenmi/palladium-automation/scripts automation/
+cp -r /home/khenmi/palladium-automation/mcp-servers automation/
+cp -r /home/khenmi/palladium-automation/.claude automation/
+cp -r /home/khenmi/palladium-automation/docs automation/
+cp -r /home/khenmi/palladium-automation/workspace automation/
 
 # automation/README.md を作成
-cp /home/khenmi/palladium_claude/README.md automation/README.md
+cp /home/khenmi/palladium-automation/README.md automation/README.md
 
 # results/ ディレクトリをトップレベルに作成
 mkdir -p results/etx
@@ -394,7 +394,7 @@ mkdir -p results/etx/$(date +%Y-%m-%d)
 
 ```bash
 # リポジトリパスを更新
-REPO_PATH="$HOME/gion"         # 変更: palladium_claude → gion
+REPO_PATH="$HOME/gion"         # 変更: palladium-automation → gion
 RESULTS_DIR="$REPO_PATH/results/etx"  # 変更
 
 # ラッパースクリプト内

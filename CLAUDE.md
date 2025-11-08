@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 2. **絶対パス使用の徹底**
    - 設定ファイルでは相対パスではなく絶対パスを使用
-   - プロジェクトルート: `/home/khenmi/palladium_claude`
+   - プロジェクトルート: `/home/khenmi/palladium-automation`
    - 環境変数で動的に取得する場合は明示的にドキュメント化
 
 3. **チーム共有可能性**
@@ -30,7 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. **セットアップの簡素化**
    ```bash
    # 必要な手順はこれだけ
-   cd ~/palladium_claude
+   cd ~/palladium-automation
    cd mcp-servers/etx-automation
    npm install
    ```
@@ -162,14 +162,14 @@ npm install
 **Claude Code (CLI) への追加**:
 ```bash
 # プロジェクトディレクトリで実行
-cd /home/khenmi/palladium_claude
-claude mcp add --transport stdio etx-automation -- node /home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js
+cd /home/khenmi/palladium-automation
+claude mcp add --transport stdio etx-automation -- node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js
 ```
 
 **確認**:
 ```bash
 claude mcp list
-# 出力: etx-automation: node /home/khenmi/palladium_claude/mcp-servers/etx-automation/index.js - ✓ Connected
+# 出力: etx-automation: node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js - ✓ Connected
 ```
 
 **注**:
@@ -239,7 +239,7 @@ scp /tmp/test.txt khenmi@ip-172-17-34-126:/tmp/
 ## ディレクトリ構造
 
 ```
-palladium_claude/
+palladium-automation/
 ├── scripts/
 │   ├── etx_automation.sh      # GUI自動操作スクリプト
 │   └── claude_to_etx.sh       # Claude Code統合スクリプト

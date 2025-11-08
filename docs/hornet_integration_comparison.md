@@ -2,7 +2,7 @@
 
 ## 前提条件
 
-- **対象**: ETX/Palladium自動化ツール（現在の `palladium_claude`）
+- **対象**: ETX/Palladium自動化ツール（現在の `palladium-automation`）
 - **用途**: `tier4/hornet` の `eda/palladium-t4-sba/` でのPalladiumエミュレーション作業の自動化
 - **環境**: ETX/Palladium chamber (RHEL8)
 
@@ -272,10 +272,10 @@ cd palladium-automation
 
 ```bash
 # ローカルで準備
-cd /home/khenmi/palladium_claude
+cd /home/khenmi/palladium-automation
 
 # リポジトリ名を変更
-mv /home/khenmi/palladium_claude /home/khenmi/palladium-automation
+mv /home/khenmi/palladium-automation /home/khenmi/palladium-automation
 
 # Git初期化
 cd /home/khenmi/palladium-automation
@@ -403,12 +403,12 @@ cd /home/khenmi/hornet
 # automation/ ディレクトリ作成
 mkdir -p automation
 
-# palladium_claude の内容をコピー
-cp -r /home/khenmi/palladium_claude/scripts automation/
-cp -r /home/khenmi/palladium_claude/mcp-servers automation/
-cp -r /home/khenmi/palladium_claude/.claude automation/
-cp -r /home/khenmi/palladium_claude/docs automation/
-cp /home/khenmi/palladium_claude/README.md automation/README.md
+# palladium-automation の内容をコピー
+cp -r /home/khenmi/palladium-automation/scripts automation/
+cp -r /home/khenmi/palladium-automation/mcp-servers automation/
+cp -r /home/khenmi/palladium-automation/.claude automation/
+cp -r /home/khenmi/palladium-automation/docs automation/
+cp /home/khenmi/palladium-automation/README.md automation/README.md
 
 # results/ ディレクトリ作成
 mkdir -p results/palladium-t4-sba
