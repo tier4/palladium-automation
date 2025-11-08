@@ -1,0 +1,56 @@
+=== Wrapper Script Started ===
+Date: Sat Nov  8 00:33:26 EST 2025
+Hostname: ga53ut01
+User: henmi
+Task ID: khenmi_20251108_143148
+Task Script: /home/henmi/.etx_tmp/task_20251108_143148.sh
+
+=== Task Start: Sat Nov  8 00:33:26 EST 2025 ===
+=== Final E2E Test Started ===
+Date: Sat Nov  8 00:33:26 EST 2025
+Hostname: ga53ut01
+User: henmi
+
+=== Test: Simple Computation ===
+100 + 200 = 300
+50 * 3 = 150
+
+=== Test: Environment Info ===
+HOME: /home/henmi
+PWD: /home/henmi/.etx_tmp/etx_results
+
+=== Test Completed Successfully ===
+=== Task End: Sat Nov  8 00:33:26 EST 2025 ===
+Status: SUCCESS
+
+=== Checking Git Configuration ===
+=== Uploading results to GitHub ===
+Repository exists, updating...
+From github.com:tier4/palladium-automation
+ * branch            main       -> FETCH_HEAD
+   3a2e125..3a31326  main       -> origin/main
+Updating 3a2e125..3a31326
+Fast-forward
+ .github/workflows/cleanup-old-results.yml |  92 ++++++
+ .gitignore                                |   4 +-
+ CLAUDE.md                                 |  43 ++-
+ README.md                                 |  29 +-
+ docs/gion_integration_plan.md             |   4 +-
+ docs/github_integration_implementation.md | 505 ++++++++++++++++++++++++++++++
+ docs/github_integration_plan.md           |  10 +-
+ docs/memo.md                              |   2 +-
+ docs/plan.md                              |   2 +-
+ docs/repository_strategy.md               |  46 +--
+ docs/setup.md                             |   4 +-
+ docs/test_report_20250108.md              | 405 ++++++++++++++++++++++++
+ mcp-servers/etx-automation/index.js       |  22 +-
+ scripts/claude_to_etx.sh                  | 303 ++++++++++++------
+ scripts/etx_automation.sh                 | 104 +++++-
+ workspace/etx_results/.gitignore          |   1 +
+ workspace/etx_results/results/README.md   |  17 +
+ 17 files changed, 1439 insertions(+), 154 deletions(-)
+ create mode 100644 .github/workflows/cleanup-old-results.yml
+ create mode 100644 docs/github_integration_implementation.md
+ create mode 100644 docs/test_report_20250108.md
+ create mode 100644 workspace/etx_results/.gitignore
+ create mode 100644 workspace/etx_results/results/README.md
