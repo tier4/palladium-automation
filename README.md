@@ -41,26 +41,20 @@ ETX/Palladium環境での自動化ツール。Tier4ハードウェアプロジ�
 
 ```
 palladium-automation/
-├── scripts/                    # 自動化スクリプト
+├── scripts/
 │   ├── claude_to_ga53pd01.sh  # SSH統合スクリプト（推奨）
-│   ├── claude_to_etx.sh       # GUI統合スクリプト（レガシー）
-│   ├── etx_automation.sh      # GUI自動操作スクリプト
-│   └── capture_etx_window.sh  # ETX画面キャプチャスクリプト
+│   └── .legacy/               # レガシースクリプト（xdotool方式）
 ├── .claude/
 │   └── etx_tasks/             # Claude Codeが生成したタスクの一時保存
 ├── workspace/
-│   └── etx_results/           # 実行結果アーカイブ
+│   └── etx_results/
 │       └── .archive/          # ローカル永続保存（YYYYMM別）
-├── .github/
-│   └── workflows/
-│       └── cleanup-old-results.yml  # 3日後の自動削除（レガシー）
 ├── docs/
-│   ├── memo.md                # 技術検討メモ
 │   ├── setup.md               # セットアップガイド
-│   ├── plan.md                # 実装プラン
 │   ├── ssh_direct_retrieval_test.md  # SSH直接取得テスト結果
-│   ├── github_integration_plan.md         # GitHub統合プラン（レガシー）
-│   └── github_integration_implementation.md  # 実装完了報告（レガシー）
+│   ├── memo.md                # 技術検討メモ
+│   ├── plan.md                # 実装プラン
+│   └── .legacy/               # レガシードキュメント（GitHub統合方式）
 ├── CLAUDE.md                  # Claude Code向けリポジトリガイド
 └── README.md                  # このファイル
 ```
@@ -72,9 +66,7 @@ palladium-automation/
 - 必須ツール:
   - SSH (公開鍵認証設定済み)
   - Git
-- オプション（GUIベース方式を使う場合）:
-  - xdotool, wmctrl, xclip
-  - netpbm-progs（画面キャプチャ用）
+  - Bash
 
 ### リモート環境 (ga53pd01)
 - OS: RHEL8
@@ -120,18 +112,7 @@ ssh ga53pd01 'hostname'
 # 出力: ga53pd01
 ```
 
-### 4. オプション: GUI自動操作ツール（レガシー機能）
-
-```bash
-# GUI自動操作ツール
-sudo dnf install -y xdotool wmctrl xclip
-
-# 画面キャプチャツール
-sudo dnf install -y netpbm-progs
-
-# DISPLAY環境変数の設定
-export DISPLAY=:2  # 環境に応じて調整
-```
+これでセットアップ完了です！詳細な手順は [docs/setup.md](docs/setup.md) を参照してください。
 
 ## 使用方法
 
@@ -182,35 +163,11 @@ Claude Codeでタスクを指示すると、自動的に以下の流れで実行
 → 結果表示
 ```
 
-### GUI自動操作スクリプト（レガシー）
+### レガシースクリプト（参考）
 
-**非推奨**: SSH方式の方がシンプルで高速です。
+xdotoolベースのGUI自動操作スクリプトは `scripts/.legacy/` に移動されました。
 
-<details>
-<summary>GUI方式の使用方法（クリックで展開）</summary>
-
-**事前準備**: ETX TurboX Dashboardから「Start Xterm」をクリック
-
-```bash
-# ウィンドウ一覧確認
-./scripts/etx_automation.sh list
-
-# ETXウィンドウをアクティブ化
-./scripts/etx_automation.sh activate
-
-# 単一コマンド実行
-./scripts/etx_automation.sh exec 'hostname'
-
-# スクリプト実行（行単位で転送）
-./scripts/etx_automation.sh script ./my_script.sh
-```
-
-**画面キャプチャ**:
-```bash
-./scripts/capture_etx_window.sh /path/to/output.png
-```
-
-</details>
+詳細は [scripts/.legacy/README.md](scripts/.legacy/README.md) を参照してください。
 
 ## トラブルシューティング
 
@@ -239,25 +196,6 @@ ls -lh workspace/etx_results/.archive/$(date +%Y%m)/
 # 最新の結果ファイルを表示
 ls -lt workspace/etx_results/.archive/$(date +%Y%m)/ | head -5
 ```
-
-### GUI自動操作の問題（レガシー）
-
-<details>
-<summary>xdotoolのトラブルシューティング（クリックで展開）</summary>
-
-```bash
-# X11ディスプレイ確認
-echo $DISPLAY
-
-# 権限設定
-xhost +SI:localuser:$(whoami)
-
-# ウィンドウ検索テスト
-wmctrl -l
-xdotool search --name "Terminal"
-```
-
-</details>
 
 ## 開発ステータス
 
