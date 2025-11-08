@@ -252,15 +252,46 @@ transfer_script_line_by_line() {
     sleep 0.5
 
     # 行単位で追記
+    local line_count=0
+    local total_lines=$(wc -l < "$local_script")
     while IFS= read -r line; do
         # シングルクォートのエスケープ
         escaped_line="${line//\'/\'\\\'\'}"
         xdotool type --delay 5 --clearmodifiers "echo '${escaped_line}' >> ${remote_script}"
         xdotool key Return
-        sleep 0.2
+        sleep 0.1
+
+        # 進捗表示（10行ごと）
+        line_count=$((line_count + 1))
+        if [ $((line_count % 10)) -eq 0 ]; then
+            log_debug "Transfer progress: $line_count/$total_lines lines"
+        fi
     done < "$local_script"
 
+    # 転送完了マーカーを追加
+    local marker="__TRANSFER_COMPLETE__$$__"
+    xdotool type --delay 5 --clearmodifiers "echo '${marker}' >> ${remote_script}"
+    xdotool key Return
+
+    # 転送完了を待つ（入力バッファが処理されるまで）
+    log_debug "Waiting for transfer to complete (${line_count} lines)..."
+
+    # 行数に応じた待ち時間を計算（0.15秒/行 + 基本2秒）
+    local estimated_wait=$(( (line_count * 15 / 100) + 2 ))
+    log_debug "Estimated wait time: ${estimated_wait}s"
+    sleep $estimated_wait
+
+    # マーカーの存在を確認（転送完了の検証）
+    log_debug "Verifying transfer completion..."
+    xdotool type --delay 10 --clearmodifiers "if grep -q '${marker}' ${remote_script}; then echo '[VERIFIED] Transfer complete'; else echo '[FAILED] Transfer incomplete'; fi"
+    xdotool key Return
+    sleep 2
+
+    # マーカーを削除（スクリプトから除去）
+    xdotool type --delay 10 --clearmodifiers "sed -i '/${marker}/d' ${remote_script}"
+    xdotool key Return
     sleep 1
+
     log_debug "Transfer complete: $remote_script"
 }
 
@@ -291,10 +322,11 @@ transfer_and_execute_with_github() {
     log_info "Setting execute permissions..."
     xdotool type --delay 10 --clearmodifiers "chmod +x ${remote_task} ${remote_wrapper}"
     xdotool key Return
-    sleep 1
+    sleep 3  # 1秒から3秒に延長
 
     # 4. ラッパー実行（バックグラウンド）
     log_info "Executing wrapper script in background..."
+    log_info "Note: Script execution will start after all input is processed by ETX terminal"
     xdotool type --delay 10 --clearmodifiers "bash ${remote_wrapper} &"
     xdotool key Return
     sleep 0.5
