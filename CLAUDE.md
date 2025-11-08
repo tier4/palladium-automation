@@ -4,7 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-このリポジトリは、Palladium環境でのClaude Code活用を実現するためのプロジェクトです。特殊なネットワーク制約下(ローカルからリモートへの片方向SCP転送のみ可能)で、GUI自動操作とGitHub経由の結果回収を組み合わせた自動化ワークフローを構築します。
+このリポジトリは、Palladium環境でのClaude Code活用を実現するためのプロジェクトです。**hornet GPU/GPGPU開発のラッパープロジェクト**として、SSH経由でga53pd01コンピュートサーバー上のPalladiumエミュレータを制御し、RTL解析・ビルド・シミュレーション・結果分析をワンストップで実行します。
+
+### プロジェクト構成
+
+```
+palladium-automation/     # このプロジェクト（ラッパー）
+├── hornet/              # git clone された hornetプロジェクト
+│   ├── src/            # Verilog/SystemVerilog RTL
+│   ├── eda/            # EDA tool configs, testbenches
+│   └── tb/             # Testbenches
+├── scripts/            # 自動化スクリプト
+│   └── claude_to_ga53pd01.sh  # SSH sync execution
+├── workspace/          # 実行結果
+└── .serena/            # Serena MCP設定（Verilog解析）
+```
+
+### 主要機能
+
+1. **RTL解析**: Serena MCPでhornetのVerilog/SystemVerilogコードを解析
+2. **リモート実行**: SSH経由でga53pd01にスクリプト転送・実行（2-3秒）
+3. **結果分析**: 実行結果の自動回収・アーカイブ・解析
+4. **ワンストップ**: palladium-automation内で解析から実行まで完結
 
 ## 重要な開発ルール
 
@@ -314,9 +335,79 @@ palladium-automation/
 └── README.md                  # プロジェクト概要
 ```
 
+## Serena MCP統合（Verilog解析）
+
+### セットアップ
+
+**Serena MCPは既に設定済みです**。以下のコマンドで確認できます：
+
+```bash
+claude mcp list
+# serena: ... - ✓ Connected
+```
+
+### Hornetプロジェクトの管理
+
+Hornetプロジェクトは`palladium-automation/hornet/`にgit cloneされています：
+
+```bash
+# Hornetの更新
+cd hornet
+git fetch origin
+git pull origin main
+
+# Hornet の状態確認
+cd hornet
+git status
+git log --oneline -10
+```
+
+**重要**: `hornet/`ディレクトリは`.gitignore`に追加されており、palladium-automationのGit管理対象外です。
+
+### Serena MCPの使用
+
+Serena MCPツールは自動的に利用可能です：
+
+- `mcp__serena__find_file`: Verilogファイルを検索
+- `mcp__serena__get_symbols_overview`: ファイルのシンボル概要取得
+- `mcp__serena__find_symbol`: シンボル検索（モジュール、関数等）
+- `mcp__serena__search_for_pattern`: パターン検索
+- `mcp__serena__read_file`: ファイル読み取り
+- その他の解析・編集ツール
+
+### 典型的なワークフロー
+
+```
+ユーザー: 「hornetのt4_hornet_topモジュールを解析して、ALUの接続を確認して」
+
+Claude Code:
+1. mcp__serena__find_file で t4_hornet_top.sv を検索
+   → hornet/src/t4_hornet_top.sv
+
+2. mcp__serena__get_symbols_overview でシンボル概要取得
+   → モジュール構造を把握
+
+3. mcp__serena__search_for_pattern でALU関連の接続を検索
+   → ALU instantiation を発見
+
+4. 分析結果をユーザーに報告
+```
+
+### Serena MCPのメモリ機能
+
+Serenaは以下のメモリファイルを自動的に管理します：
+
+- `project_purpose.md`: プロジェクトの目的
+- `tech_stack.md`: 技術スタック
+- `suggested_commands.md`: 推奨コマンド
+- `codebase_structure.md`: コードベース構造
+- `task_completion_checklist.md`: タスク完了チェックリスト
+
+これらはClaude Codeが自動的に参照します。
+
 ## 注意事項
 
-- リモート環境(ETX/Palladium)は外部ネットワークアクセスが制限されているため、すべての依存関係は事前に準備が必要
-- GUI自動操作は視覚的なフィードバックが限定的なため、ログ出力を充実させることが重要
-- GitHub経由の結果回収にはネットワーク遅延があるため、長時間実行されるタスクに適している
-- xdotoolはウィンドウタイトルでターミナルを識別するため、ターミナルタイトルの変更に注意
+- リモート環境(ga53pd01/Palladium)は外部ネットワークアクセスが制限されているため、すべての依存関係は事前に準備が必要
+- SSH同期実行は短〜中時間タスク向け（2-3秒のオーバーヘッド）
+- 長時間タスクの場合は`USE_GITHUB=1`モードを使用
+- hornetディレクトリの変更は、必要に応じて上流にpush

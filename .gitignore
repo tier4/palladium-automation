@@ -6,6 +6,10 @@
 # ローカルアーカイブのみ除外、results/はGit管理
 workspace/etx_results/.archive/
 
+# Cloned repositories (hornet project)
+# hornetリポジトリは git clone で取得するため、Git管理対象外
+hornet/
+
 # Node.js
 node_modules/
 npm-debug.log*
