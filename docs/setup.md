@@ -1,6 +1,6 @@
 # セットアップガイド
 
-このガイドでは、Palladium Claude Code統合プロジェクトのセットアップ手順を説明します。
+このガイドでは、Palladium自動化プロジェクトのセットアップ手順を説明します。
 
 ## 重要: プロジェクト内完結の原則
 
@@ -14,8 +14,8 @@
 ## 目次
 
 1. [前提条件](#前提条件)
-2. [基本セットアップ](#基本セットアップ)
-3. [MCP Server設定](#mcp-server設定)
+2. [SSH公開鍵認証の設定](#ssh公開鍵認証の設定)
+3. [プロジェクトのセットアップ](#プロジェクトのセットアップ)
 4. [動作確認](#動作確認)
 5. [トラブルシューティング](#トラブルシューティング)
 
@@ -23,37 +23,285 @@
 
 ## 前提条件
 
-### ローカル環境（RHEL8 + GNOME）
+### ローカル環境（RHEL8）
 
 必須ツール:
+- SSH (OpenSSH 7.3以降)
+- Git
+- Bash
+
+オプション（GUIベース方式を使う場合）:
 - xdotool
 - wmctrl
 - xclip
-- Node.js (v16以降)
-- Git
-- SCP/SSH
+- netpbm-progs
 
-### リモート環境（ETX/Palladium）
+### リモート環境（ga53pd01）
 
 - RHEL8
-- GitHub認証設定済み
-- SCPアクセス可能
+- Palladium Compute Server
+- SSHアクセス可能
+- バスティオンサーバー（10.108.64.1）経由でアクセス
 
-### 環境変数
+---
+
+## SSH公開鍵認証の設定
+
+### 1. SSH鍵の生成
+
+既にSSH鍵を持っている場合はスキップできます。
 
 ```bash
-# X11ディスプレイの設定（必須）
-export DISPLAY=:2  # 環境に応じて調整
+# SSH鍵の存在確認
+ls -la ~/.ssh/id_*.pub
 
-# .bashrcに追加することを推奨
-echo 'export DISPLAY=:2' >> ~/.bashrc
+# 鍵がない場合は生成
+ssh-keygen -t ed25519 -C "your_email@tier4.jp"
+
+# パスフレーズの入力（推奨）
+# Enter passphrase (empty for no passphrase): [パスフレーズを入力]
+# Enter same passphrase again: [もう一度入力]
+```
+
+**推奨設定**:
+- 鍵タイプ: `ed25519` （高速・安全）
+- 保存場所: デフォルト（`~/.ssh/id_ed25519`）
+- パスフレーズ: 設定推奨（セキュリティ向上）
+
+### 2. バスティオンサーバーへの公開鍵登録
+
+```bash
+# バスティオンサーバーに公開鍵をコピー
+ssh-copy-id henmi@10.108.64.1
+
+# パスワードを入力
+# henmi@10.108.64.1's password: [パスワード入力]
+
+# 接続確認
+ssh henmi@10.108.64.1 'hostname'
+# 出力: [バスティオンサーバーのホスト名]
+```
+
+### 3. ga53pd01への公開鍵登録
+
+```bash
+# バスティオンサーバー経由でga53pd01にログイン
+ssh henmi@10.108.64.1
+
+# ga53pd01に公開鍵をコピー
+ssh-copy-id henmi@ga53pd01
+
+# パスワードを入力
+# henmi@ga53pd01's password: [パスワード入力]
+
+# ログアウト
+exit
+```
+
+### 4. SSH ProxyJump設定
+
+ProxyJump機能を使うと、バスティオンサーバー経由のアクセスが透過的になります。
+
+`~/.ssh/config` ファイルを編集:
+
+```bash
+nano ~/.ssh/config
+```
+
+以下の設定を追加:
+
+```ssh-config
+# Palladium Bastion Server
+Host palladium_bastion
+  HostName 10.108.64.1
+  User henmi
+  IdentityFile ~/.ssh/id_ed25519
+  ForwardX11 yes
+
+# Palladium ga53pd01 via Bastion
+Host ga53pd01
+  HostName ga53pd01
+  User henmi
+  IdentityFile ~/.ssh/id_ed25519
+  ProxyJump palladium_bastion
+  ForwardX11 yes
+```
+
+**設定のカスタマイズ**:
+- `User`: 自分のユーザー名に変更
+- `IdentityFile`: 異なるSSH鍵を使用する場合は変更
+- `ForwardX11`: X11フォワーディングが不要な場合は削除
+
+### 5. SSH接続の確認
+
+```bash
+# ga53pd01への直接接続テスト（パスワード不要で接続できるはず）
+ssh ga53pd01 'hostname'
+# 出力: ga53pd01
+
+# 詳細情報の確認
+ssh ga53pd01 'hostname; whoami; pwd'
+# 出力例:
+# ga53pd01
+# henmi
+# /home/henmi
+```
+
+**成功の確認ポイント**:
+- ✅ パスワード入力なしで接続できる
+- ✅ `ga53pd01` というホスト名が表示される
+- ✅ 接続時間が2秒以内
+
+**トラブルシューティング**:
+
+パスワードを要求される場合:
+```bash
+# デバッグモードで接続
+ssh -v ga53pd01
+
+# 公開鍵認証が試行されているか確認
+# "Offering public key: ..." というメッセージを探す
+
+# 公開鍵が正しく登録されているか確認
+ssh ga53pd01 'cat ~/.ssh/authorized_keys'
 ```
 
 ---
 
-## 基本セットアップ
+## プロジェクトのセットアップ
 
-### 1. 必要なツールのインストール
+### 1. プロジェクトのクローン
+
+```bash
+cd ~
+git clone https://github.com/tier4/palladium-automation.git
+cd palladium-automation
+```
+
+### 2. ディレクトリ構造の確認
+
+```bash
+ls -la
+```
+
+期待される構造:
+```
+palladium-automation/
+├── scripts/
+│   ├── claude_to_ga53pd01.sh    # SSH統合スクリプト（推奨）
+│   ├── claude_to_etx.sh         # GUI統合スクリプト（レガシー）
+│   ├── etx_automation.sh        # GUI自動操作スクリプト
+│   └── capture_etx_window.sh    # 画面キャプチャスクリプト
+├── workspace/
+│   └── etx_results/
+│       └── .archive/            # ローカル結果アーカイブ
+├── docs/
+├── CLAUDE.md
+└── README.md
+```
+
+### 3. スクリプトの実行権限確認
+
+```bash
+chmod +x scripts/claude_to_ga53pd01.sh
+chmod +x scripts/claude_to_etx.sh
+chmod +x scripts/etx_automation.sh
+chmod +x scripts/capture_etx_window.sh
+```
+
+### 4. アーカイブディレクトリの作成
+
+```bash
+# 結果保存用ディレクトリの作成
+mkdir -p workspace/etx_results/.archive
+```
+
+---
+
+## 動作確認
+
+### 1. SSH接続テスト
+
+```bash
+# シンプルな接続テスト
+ssh ga53pd01 'echo "Connection successful: $(hostname)"'
+# 出力: Connection successful: ga53pd01
+```
+
+### 2. スクリプト実行テスト
+
+#### 簡単なテストスクリプトを作成
+
+```bash
+cat > /tmp/test_task.sh << 'EOF'
+#!/bin/bash
+echo "=== Test Task Started ==="
+echo "Date: $(date)"
+echo "User: $(whoami)"
+echo "Hostname: $(hostname)"
+echo ""
+echo "Working directory: $(pwd)"
+echo "Test calculation: 10 + 20 = $((10 + 20))"
+echo ""
+echo "=== Test Task Complete ==="
+EOF
+```
+
+#### SSH統合スクリプトで実行
+
+```bash
+./scripts/claude_to_ga53pd01.sh /tmp/test_task.sh
+```
+
+**期待される動作**:
+1. スクリプトがga53pd01で実行される
+2. 実行中の出力がリアルタイムで表示される
+3. 結果が `workspace/etx_results/.archive/YYYYMM/` に保存される
+
+**実行例**:
+```
+[INFO] === Running Task on ga53pd01: test_task ===
+[INFO] Task ID: khenmi_20251108_183841
+[INFO] Timestamp: 20251108_183841
+[INFO] Execution mode: SSH Synchronous (real-time output)
+[INFO] Executing script on ga53pd01...
+[INFO] Output will be saved to: workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_task_result.txt
+
+=== Test Task Started ===
+Date: Sat Nov  8 01:38:41 PST 2025
+User: henmi
+Hostname: ga53pd01
+
+Working directory: /home/henmi
+Test calculation: 10 + 20 = 30
+
+=== Test Task Complete ===
+
+[INFO] === Task Completed Successfully ===
+[INFO] Result archived: workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_task_result.txt
+[INFO] Output: 10 lines, 4.0K
+```
+
+### 3. 結果ファイルの確認
+
+```bash
+# アーカイブディレクトリの確認
+ls -lh workspace/etx_results/.archive/$(date +%Y%m)/
+
+# 最新の結果を表示
+ls -t workspace/etx_results/.archive/$(date +%Y%m)/ | head -1 | xargs -I {} cat "workspace/etx_results/.archive/$(date +%Y%m)/{}"
+```
+
+---
+
+## オプション: GUI自動操作ツール（レガシー）
+
+SSH方式で十分な場合、このセクションはスキップできます。
+
+<details>
+<summary>GUI方式のセットアップ（クリックで展開）</summary>
+
+### 必要なツールのインストール
 
 ```bash
 # GUI自動操作ツール
@@ -61,218 +309,34 @@ sudo dnf install -y xdotool wmctrl xclip
 
 # 画面キャプチャツール
 sudo dnf install -y netpbm-progs
-
-# Node.jsがない場合（既にインストール済みの場合はスキップ）
-# sudo dnf install -y nodejs npm
 ```
 
-### 2. プロジェクトのクローン
+### DISPLAY環境変数の設定
 
 ```bash
-cd ~
-git clone https://github.com/your-org/palladium-automation.git
-cd palladium-automation
+# DISPLAY環境変数の確認
+echo $DISPLAY
+
+# 設定されていない場合
+export DISPLAY=:2  # 環境に応じて調整
+
+# .bashrcに追加（永続化）
+echo 'export DISPLAY=:2' >> ~/.bashrc
+source ~/.bashrc
+
+# X11権限の設定
+xhost +SI:localuser:$(whoami)
 ```
 
-### 3. ディレクトリ構造の確認
+### ETX Xtermの起動
+
+1. **ETX TurboX Dashboardにアクセス**
+2. **「Start Xterm」をクリック**
+3. **ローカルデスクトップにXtermウィンドウが表示される**
+
+### GUI方式の動作確認
 
 ```bash
-tree -L 2 -a
-```
-
-期待される構造:
-```
-palladium-automation/
-├── .claude/
-│   └── etx_tasks/
-├── scripts/
-│   ├── etx_automation.sh
-│   └── claude_to_etx.sh
-├── mcp-servers/
-│   └── etx-automation/
-├── workspace/
-│   └── etx_results/
-└── docs/
-```
-
-### 4. スクリプトの実行権限確認
-
-```bash
-chmod +x scripts/etx_automation.sh
-chmod +x scripts/capture_etx_window.sh
-chmod +x scripts/claude_to_etx.sh
-chmod +x mcp-servers/etx-automation/index.js
-```
-
----
-
-## MCP Server設定
-
-### 1. MCP Serverのインストール
-
-```bash
-cd ~/palladium-automation/mcp-servers/etx-automation
-npm install
-```
-
-**注意**: グローバルインストール（npm link）は不要です。プロジェクト内で完結します。
-
-### 2. インストール確認
-
-```bash
-# 依存関係がインストールされているか確認
-ls -la mcp-servers/etx-automation/node_modules/@modelcontextprotocol
-
-# MCPサーバーが実行可能か確認
-node mcp-servers/etx-automation/index.js --version 2>&1 | head -5
-```
-
-### 3. Claude Code設定ファイルの作成
-
-Claude Code設定ファイルの場所:
-```bash
-~/.config/Claude/claude_desktop_config.json
-```
-
-サンプル設定をコピー:
-```bash
-mkdir -p ~/.config/Claude
-cp docs/claude_desktop_config.json.example ~/.config/Claude/claude_desktop_config.json
-```
-
-### 4. 設定ファイルの編集
-
-```bash
-nano ~/.config/Claude/claude_desktop_config.json
-```
-
-**最小構成（etx-automationのみ）**:
-```json
-{
-  "mcpServers": {
-    "etx-automation": {
-      "command": "node",
-      "args": ["/home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js"]
-    }
-  }
-}
-```
-
-### 4. MCP Serverの追加
-
-#### Claude Code (CLI) を使用する場合（推奨）
-
-```bash
-cd /home/khenmi/palladium-automation
-claude mcp add --transport stdio etx-automation -- node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js
-```
-
-確認:
-```bash
-claude mcp list
-# 出力: etx-automation: node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js - ✓ Connected
-```
-
-#### Claude Desktop (デスクトップアプリ) を使用する場合
-
-`~/.config/Claude/claude_desktop_config.json` を作成または編集：
-
-```json
-{
-  "mcpServers": {
-    "etx-automation": {
-      "command": "node",
-      "args": ["/home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js"],
-      "env": {
-        "DEBUG": "0"
-      }
-    }
-  }
-}
-```
-
-**オプション: GitHub統合を追加する場合**:
-```json
-{
-  "mcpServers": {
-    "etx-automation": { ... },
-    "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_your_token_here"
-      }
-    }
-  }
-}
-```
-
-**重要**:
-- `/home/khenmi/palladium-automation` の部分は、あなたの環境のプロジェクトパスに合わせて変更してください
-- Claude Code (CLI) と Claude Desktop (デスクトップアプリ) は異なる設定ファイルを使用します
-
-### 5. Claude Codeの再起動（Claude Desktopの場合）
-
-Claude Desktopを使用している場合、設定を反映させるためアプリケーションを再起動します。
-
----
-
-## ETX Xtermの起動（重要）
-
-**このプロジェクトでは、ETXから起動したXtermウィンドウをローカルで制御します。**
-
-### ETX Xtermの起動手順
-
-1. **ETX TurboX Clientにアクセス**
-   - ブラウザでETX TurboX Dashboardを開く
-   - または既存のETX接続を使用
-
-2. **Start Xtermをクリック**
-   - ETX Dashboard内の「Start Xterm」アイコンをクリック
-   - ローカルデスクトップに新しいXtermウィンドウが表示される
-
-3. **ウィンドウタイトルの確認**
-   ```bash
-   # ウィンドウ一覧で確認
-   wmctrl -l | grep ga53
-   ```
-
-   期待される出力例：
-   ```
-   0x02a00405  0 ga53ut01 henmi@ga53ut01: /home/henmi
-   ```
-
-4. **ウィンドウ名の設定**
-   - デフォルトでは `ga53ut01` をウィンドウ名として使用
-   - 環境に応じて変更する場合：
-     ```bash
-     export ETX_WINDOW_NAME="your_window_name"
-     ```
-
-### 注意事項
-
-- **ETX Xtermを起動せずにスクリプトを実行すると、ローカルのターミナルで実行されてしまいます**
-- スクリプト実行前に必ずETX Xtermウィンドウが起動していることを確認してください
-- ETX Xtermウィンドウは作業中、開いたままにしておく必要があります
-
----
-
-## 動作確認
-
-### 0. ETX Xterm起動確認（最初に実施）
-
-```bash
-# ETX Xtermウィンドウの起動を確認
-wmctrl -l | grep ga53
-
-# ウィンドウが見つからない場合は、ETX Dashboardから「Start Xterm」を実行
-```
-
-### 1. 基本コマンドテスト
-
-```bash
-cd ~/palladium-automation
-
 # ウィンドウ一覧表示
 ./scripts/etx_automation.sh list
 
@@ -283,192 +347,150 @@ cd ~/palladium-automation
 ./scripts/etx_automation.sh activate
 ```
 
-### 2. スクリプト実行テスト
-
-```bash
-# テストスクリプトの実行
-./scripts/etx_automation.sh script .claude/etx_tasks/test_task.sh
-```
-
-### 3. Claude Code統合テスト（オプション）
-
-GitHub経由の結果回収をテストする場合:
-
-```bash
-# GitHub設定の確認
-# 1. GitHubリポジトリ: tier4/palladium-automation へのアクセス権限
-# 2. リモートETX環境でのGitHub認証設定
-
-# テスト実行
-./scripts/claude_to_etx.sh .claude/etx_tasks/test_task.sh
-```
-
-### 4. MCPサーバーの動作確認
-
-Claude Code内で以下のツールが利用可能になっているか確認:
-
-- `execute_on_etx` - ETXで単一コマンド実行
-- `run_script_on_etx` - スクリプト転送・実行・結果回収
-- `activate_etx_window` - ETXウィンドウのアクティブ化
-- `list_windows` - ウィンドウ一覧表示
-- `test_etx_connection` - 接続テスト
-
-### 5. 画面キャプチャのテスト
-
-```bash
-# ETX Xtermが起動していることを確認
-wmctrl -l | grep ga53
-
-# キャプチャテスト
-./scripts/capture_etx_window.sh
-
-# 出力ファイル確認
-ls -lh /tmp/etx_capture_*.png
-```
-
-**キャプチャ機能の使い道**:
-- Claude Codeでスクリプト実行後、視覚的に結果を確認
-- デバッグ時のスクリーンショット取得
-- 実行エラーの診断
+</details>
 
 ---
 
 ## トラブルシューティング
 
-### xdotoolが動作しない
+### SSH接続エラー: パスワードを要求される
 
-**症状**: `DISPLAY environment variable is not set`
-
-**解決方法**:
-```bash
-# DISPLAY環境変数の確認
-echo $DISPLAY
-
-# 設定されていない場合
-export DISPLAY=:2
-
-# .bashrcに追加
-echo 'export DISPLAY=:2' >> ~/.bashrc
-source ~/.bashrc
-
-# X11権限の設定
-xhost +SI:localuser:$(whoami)
-```
-
-### ETXウィンドウが見つからない
-
-**症状**: `ETX window not found`
-
-**原因**: ETX Xtermウィンドウが起動していない、またはウィンドウ名が異なる
+**原因**: 公開鍵認証が正しく設定されていない
 
 **解決方法**:
 
-1. **ETX Xtermの起動確認**:
+1. **SSH鍵が正しく登録されているか確認**:
    ```bash
-   # 全ウィンドウのリスト確認
-   wmctrl -l
+   # バスティオンサーバーで確認
+   ssh henmi@10.108.64.1 'cat ~/.ssh/authorized_keys'
 
-   # ETX関連のウィンドウを検索
-   wmctrl -l | grep -i "ga53\|etx"
+   # ga53pd01で確認（バスティオンサーバー経由）
+   ssh henmi@10.108.64.1 'ssh ga53pd01 "cat ~/.ssh/authorized_keys"'
    ```
 
-2. **ETX Xtermが起動していない場合**:
-   - ETX TurboX Dashboard を開く
-   - 「Start Xterm」アイコンをクリック
-   - ローカルデスクトップにXtermウィンドウが表示されることを確認
-
-3. **ウィンドウ名が異なる場合**:
+2. **公開鍵の権限確認**:
    ```bash
-   # 正しいウィンドウ名を確認
-   wmctrl -l
+   # ローカルの権限確認
+   ls -la ~/.ssh/
+   # id_ed25519: 600 (rw-------)
+   # id_ed25519.pub: 644 (rw-r--r--)
 
-   # 環境変数で指定
-   export ETX_WINDOW_NAME="実際のウィンドウ名"
+   # 権限が異なる場合は修正
+   chmod 600 ~/.ssh/id_ed25519
+   chmod 644 ~/.ssh/id_ed25519.pub
+   chmod 700 ~/.ssh
    ```
 
-4. **よくある間違い**:
-   - ❌ ローカルのターミナル（`khenmi@ip-172-17-34-126`）を使用している
-   - ✅ ETX Xterm（`henmi@ga53ut01`）を使用する必要がある
+3. **SSH AgentにSSH鍵を追加**:
+   ```bash
+   # SSH Agentの起動確認
+   ssh-add -l
 
-### SCP接続エラー (Note: 現在のバージョンでは使用していません)
+   # 鍵がリストにない場合は追加
+   ssh-add ~/.ssh/id_ed25519
+   ```
 
-**症状**: `SCP transfer failed`
+4. **デバッグモードで詳細確認**:
+   ```bash
+   # 詳細ログを出力
+   ssh -vv ga53pd01
+
+   # 以下のメッセージを探す:
+   # "Offering public key: ~/.ssh/id_ed25519"
+   # "Server accepts key: ..."
+   ```
+
+### SSH接続エラー: ProxyJumpが機能しない
+
+**症状**: `ssh: Could not resolve hostname ga53pd01`
+
+**原因**: SSH config設定が読み込まれていない、または構文エラー
+
+**解決方法**:
+
+1. **設定ファイルの構文確認**:
+   ```bash
+   # SSH configの確認
+   cat ~/.ssh/config
+
+   # 構文チェック（存在する場合）
+   ssh -G ga53pd01
+   ```
+
+2. **設定ファイルの権限確認**:
+   ```bash
+   ls -la ~/.ssh/config
+   # 出力: -rw------- (600)
+
+   # 権限が異なる場合は修正
+   chmod 600 ~/.ssh/config
+   ```
+
+3. **手動でProxyJumpを指定**:
+   ```bash
+   # configなしで接続テスト
+   ssh -J henmi@10.108.64.1 henmi@ga53pd01 'hostname'
+   ```
+
+### スクリプト実行エラー: Permission denied
+
+**症状**: `bash: ./scripts/claude_to_ga53pd01.sh: Permission denied`
 
 **解決方法**:
 ```bash
-# SSH鍵の確認
-ssh-add -l
+# 実行権限を追加
+chmod +x scripts/claude_to_ga53pd01.sh
 
-# SSH鍵がない場合は追加
-ssh-add ~/.ssh/id_rsa
-
-# 手動接続テスト
-scp /tmp/test.txt khenmi@ip-172-17-34-126:/tmp/
-
-# ホストキーの確認
-ssh-keyscan ip-172-17-34-126 >> ~/.ssh/known_hosts
+# すべてのスクリプトに一括で追加
+chmod +x scripts/*.sh
 ```
 
-### npm installが失敗する
+### 結果ファイルが見つからない
 
-**症状**: `Permission denied` または `EACCES`
+**原因**: アーカイブディレクトリが存在しない、または日付が異なる
 
 **解決方法**:
 ```bash
-# プロジェクトディレクトリの権限確認
-ls -la ~/palladium-automation/mcp-servers/etx-automation
+# アーカイブディレクトリの作成
+mkdir -p workspace/etx_results/.archive
 
-# 権限を修正
-chmod -R u+w ~/palladium-automation/mcp-servers/etx-automation
+# すべてのアーカイブを確認
+find workspace/etx_results/.archive -type f -name "*.txt" | sort -r | head -5
 
-# 再度インストール
-cd ~/palladium-automation/mcp-servers/etx-automation
-rm -rf node_modules package-lock.json
-npm install
+# 最新の結果を表示
+find workspace/etx_results/.archive -type f -name "*.txt" -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2- | xargs cat
 ```
 
-### Claude CodeがMCPサーバーを認識しない
+### スクリプト実行が遅い
 
-**症状**: ツールが表示されない
+**原因**: SSH接続の確立に時間がかかっている
 
-**確認事項**:
-1. 設定ファイルの場所が正しいか: `~/.config/Claude/claude_desktop_config.json`
-2. JSONの構文エラーがないか（カンマ、括弧の確認）
-3. プロジェクトパスが正しいか（絶対パスを使用）
-4. MCP Serverの依存関係がインストールされているか
-5. Claude Codeを完全に再起動したか
+**解決方法**:
 
-**デバッグ方法**:
-```bash
-# MCPサーバーを直接実行してエラー確認
-node /home/khenmi/palladium-automation/mcp-servers/etx-automation/index.js
+1. **SSH ControlMasterを有効化（接続再利用）**:
 
-# 依存関係の確認
-ls /home/khenmi/palladium-automation/mcp-servers/etx-automation/node_modules/@modelcontextprotocol
+   `~/.ssh/config` に追加:
+   ```ssh-config
+   Host *
+     ControlMaster auto
+     ControlPath ~/.ssh/cm-%r@%h:%p
+     ControlPersist 10m
+   ```
 
-# JSON構文チェック
-cat ~/.config/Claude/claude_desktop_config.json | jq .
+2. **DNS解決の高速化**:
 
-# 設定ファイルの内容確認
-cat ~/.config/Claude/claude_desktop_config.json
-```
+   `/etc/hosts` に追加（要root権限）:
+   ```
+   10.108.64.1 palladium_bastion
+   ```
 
-### GitHub結果取得がタイムアウトする
-
-**症状**: `Timeout waiting for results`
-
-**原因と解決方法**:
-1. **リモートETXでGitHubにアクセスできない**
-   - ETX環境でGitHub認証を確認
-   - `git config --global user.name` と `user.email` の設定確認
-
-2. **タスク実行が5分以上かかっている**
-   - タイムアウト時間を調整（環境変数で設定可能に改善予定）
-   - 手動でGitHubリポジトリを確認: https://github.com/tier4/palladium-automation/tree/main/results
-
-3. **ネットワーク遅延**
-   - ポーリング間隔を調整
-   - ローカルログファイルで確認
+3. **接続確認**:
+   ```bash
+   # 初回接続（コントロールマスター確立）
+   time ssh ga53pd01 'echo test'
+   # 2回目以降は高速になる
+   time ssh ga53pd01 'echo test'
+   ```
 
 ---
 
@@ -476,18 +498,36 @@ cat ~/.config/Claude/claude_desktop_config.json
 
 セットアップが完了したら:
 
-1. [使用例](examples.md) を参照して実際のユースケースを試す
-2. Claude Code内でMCPツールを使用してETX操作を自動化
-3. 独自のタスクスクリプトを作成
+1. **実際のタスクを実行**:
+   ```bash
+   # 例: ビルドスクリプトを作成して実行
+   cat > /tmp/build_task.sh << 'EOF'
+   #!/bin/bash
+   cd /proj/tierivemu/work/henmi/gion
+   make clean
+   make all
+   EOF
+
+   ./scripts/claude_to_ga53pd01.sh /tmp/build_task.sh
+   ```
+
+2. **Claude Codeと統合**:
+   - Claude Codeでタスクを自動生成
+   - `claude_to_ga53pd01.sh` で実行
+   - 結果を確認・分析
+
+3. **独自のワークフローを構築**:
+   - テスト自動実行
+   - ログ分析
+   - レポート生成
 
 ---
 
 ## 参考資料
 
 - [プロジェクト概要](../README.md)
-- [実装プラン](plan.md)
+- [SSH直接取得テスト結果](ssh_direct_retrieval_test.md)
 - [CLAUDE.md](../CLAUDE.md) - Claude Code向けガイド
-- [技術メモ](memo.md)
 
 ## サポート
 
