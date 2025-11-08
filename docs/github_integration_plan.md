@@ -522,16 +522,16 @@ EOF
 
 ### 1. GitHub リポジトリの準備
 
-**リポジトリ**: `tier4/gion-automation`
+**リポジトリ**: `tier4/palladium-automation`
 
 **必要な設定**:
 ```bash
 # リポジトリが存在しない場合は作成
-# GitHubでリポジトリを作成: https://github.com/tier4/gion-automation
+# GitHubでリポジトリを作成: https://github.com/tier4/palladium-automation
 
 # ローカル環境での初回クローン確認
 cd ~/palladium-automation/workspace
-git clone https://github.com/tier4/gion-automation.git etx_results
+git clone https://github.com/tier4/palladium-automation.git etx_results
 cd etx_results
 mkdir -p results
 git add results/.gitkeep
@@ -556,7 +556,7 @@ git config --global user.email "etx@automation.local"
 ssh -T git@github.com
 
 # 2. HTTPS + Personal Access Token方式
-git clone https://github.com/tier4/gion-automation.git
+git clone https://github.com/tier4/palladium-automation.git
 # トークン入力プロンプトが表示される
 ```
 
@@ -654,7 +654,7 @@ git pull origin main
 ## 次のステップ
 
 1. **GitHub リポジトリの確認**
-   - `tier4/gion-automation` が利用可能か確認
+   - `tier4/palladium-automation` が利用可能か確認
    - アクセス権限の確認
 
 2. **ETX GitHub認証の確認**

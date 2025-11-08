@@ -5,7 +5,7 @@
 現在のプロジェクト:
 - **ローカルパス**: `/home/khenmi/palladium-automation`
 - **Git管理**: なし（まだリポジトリ化されていない）
-- **結果取得用リポジトリ**: `tier4/gion-automation`（計画中）
+- **結果取得用リポジトリ**: `tier4/palladium-automation`（計画中）
 
 ---
 
@@ -16,7 +16,7 @@
 プロジェクト本体と結果取得を同一リポジトリで管理
 
 ```
-tier4/gion-automation/
+tier4/palladium-automation/
 ├── scripts/              # 自動化スクリプト
 │   ├── etx_automation.sh
 │   ├── capture_etx_window.sh
@@ -74,7 +74,7 @@ tier4/palladium-claude/
 
 #### 結果専用リポジトリ
 ```
-tier4/gion-automation-results/
+tier4/palladium-automation-results/
 └── results/
     ├── task_20251107_result.txt
     └── ...
@@ -84,13 +84,13 @@ tier4/gion-automation-results/
 ```bash
 /home/khenmi/palladium-claude/           # プロジェクト本体
 /home/khenmi/palladium-claude/workspace/
-└── etx_results/  → tier4/gion-automation-results
+└── etx_results/  → tier4/palladium-automation-results
 ```
 
 #### ETXリモート配置
 ```bash
 /home/henmi/.etx_tmp/
-└── etx_results/  → tier4/gion-automation-results
+└── etx_results/  → tier4/palladium-automation-results
 ```
 
 #### メリット
@@ -110,11 +110,11 @@ tier4/gion-automation-results/
 プロジェクトをモノレポ化し、結果をサブモジュール管理
 
 ```
-tier4/gion-automation/
+tier4/palladium-automation/
 ├── automation/           # プロジェクト本体（このディレクトリ）
 │   ├── scripts/
 │   └── mcp-servers/
-└── results/              # Git submodule → tier4/gion-automation-results
+└── results/              # Git submodule → tier4/palladium-automation-results
     └── (別リポジトリ)
 ```
 
@@ -135,7 +135,7 @@ tier4/gion-automation/
 1. **シンプルさ**: 初期セットアップと日常運用が簡単
 2. **チーム協業**: 全員が同じリポジトリをクローンするだけ
 3. **トレーサビリティ**: スクリプト変更と結果が同じ履歴に残る
-4. **既存の `tier4/gion-automation`**: すでに存在するならそのまま活用
+4. **既存の `tier4/palladium-automation`**: すでに存在するならそのまま活用
 
 ### 具体的な配置
 
@@ -147,11 +147,11 @@ cd /home/khenmi/palladium-automation
 
 # リモートリポジトリを追加
 git init
-git remote add origin https://github.com/tier4/gion-automation.git
+git remote add origin https://github.com/tier4/palladium-automation.git
 
 # または既存リポジトリをクローン
 cd /home/khenmi
-git clone https://github.com/tier4/gion-automation.git palladium-automation
+git clone https://github.com/tier4/palladium-automation.git palladium-automation
 cd palladium-automation
 ```
 
@@ -160,11 +160,11 @@ cd palladium-automation
 ```bash
 # ETX Xtermで実行
 cd /home/henmi
-git clone https://github.com/tier4/gion-automation.git
+git clone https://github.com/tier4/palladium-automation.git
 
 # または軽量クローン（結果アップロードのみ）
 cd /home/henmi/.etx_tmp
-git clone --depth=1 https://github.com/tier4/gion-automation.git etx_results
+git clone --depth=1 https://github.com/tier4/palladium-automation.git etx_results
 ```
 
 ---
@@ -174,7 +174,7 @@ git clone --depth=1 https://github.com/tier4/gion-automation.git etx_results
 ### 統合後のリポジトリ構造
 
 ```
-tier4/gion-automation/
+tier4/palladium-automation/
 ├── .github/
 │   └── workflows/        # CI/CD（オプション）
 │       └── cleanup-old-results.yml
@@ -305,7 +305,7 @@ git commit -m "Initial commit: Palladium Claude Code integration"
 # リポジトリ名: gion-automation
 
 # リモート追加
-git remote add origin https://github.com/tier4/gion-automation.git
+git remote add origin https://github.com/tier4/palladium-automation.git
 git branch -M main
 git push -u origin main
 ```
@@ -315,7 +315,7 @@ git push -u origin main
 ```bash
 # 既存リポジトリがある場合はクローン
 cd /home/khenmi
-git clone https://github.com/tier4/gion-automation.git palladium-automation
+git clone https://github.com/tier4/palladium-automation.git palladium-automation
 cd palladium-automation
 
 # MCP Serverセットアップ
@@ -339,11 +339,11 @@ ln -s ../results workspace/etx_results
 cd /home/henmi
 
 # 軽量クローン（結果アップロード専用）
-git clone --depth=1 https://github.com/tier4/gion-automation.git
+git clone --depth=1 https://github.com/tier4/palladium-automation.git
 
 # または作業用に.etx_tmpに配置
 cd /home/henmi/.etx_tmp
-git clone --depth=1 https://github.com/tier4/gion-automation.git etx_results
+git clone --depth=1 https://github.com/tier4/palladium-automation.git etx_results
 cd etx_results
 
 # Git設定
@@ -376,14 +376,14 @@ git push origin main
 
 ## 既存リポジトリがある場合
 
-### tier4/gion-automation が既に存在する場合
+### tier4/palladium-automation が既に存在する場合
 
 #### Option A: 既存リポジトリに統合
 
 ```bash
 # ローカルで既存リポジトリをクローン
 cd /home/khenmi
-git clone https://github.com/tier4/gion-automation.git palladium-automation
+git clone https://github.com/tier4/palladium-automation.git palladium-automation
 cd palladium-automation
 
 # 現在のファイルをマージ
@@ -397,7 +397,7 @@ git push origin main
 
 ```bash
 # 既存リポジトリの構造を確認
-git clone https://github.com/tier4/gion-automation.git
+git clone https://github.com/tier4/palladium-automation.git
 cd gion-automation
 ls -la
 
@@ -419,7 +419,7 @@ git push origin main
 
 ### Phase 1: リポジトリ準備（今回）
 
-1. ✅ `tier4/gion-automation` の確認または作成
+1. ✅ `tier4/palladium-automation` の確認または作成
 2. ✅ 現在のファイルをリポジトリに追加
 3. ✅ `.gitignore` の設定
 4. ✅ 初回コミット・プッシュ
@@ -450,7 +450,7 @@ git push origin main
 
 | 項目 | 内容 |
 |------|------|
-| **リポジトリ** | `tier4/gion-automation`（単一リポジトリ） |
+| **リポジトリ** | `tier4/palladium-automation`（単一リポジトリ） |
 | **ローカルパス** | `/home/khenmi/palladium-automation` |
 | **ETXパス** | `/home/henmi/.etx_tmp/etx_results` |
 | **結果ディレクトリ** | `results/`（Git管理） |
@@ -458,7 +458,7 @@ git push origin main
 
 ### 次のステップ
 
-1. `tier4/gion-automation` が存在するか確認
+1. `tier4/palladium-automation` が存在するか確認
 2. 存在する場合: 既存内容を確認
 3. 存在しない場合: 新規作成
 4. ローカル環境でGit初期化

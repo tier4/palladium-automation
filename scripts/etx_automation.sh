@@ -225,21 +225,103 @@ test_connection() {
     fi
 }
 
+# 行単位でスクリプトを転送する共通関数
+transfer_script_line_by_line() {
+    local local_script="$1"
+    local remote_script="$2"
+
+    if [ ! -f "$local_script" ]; then
+        log_error "Local script not found: $local_script"
+        return 1
+    fi
+
+    log_debug "Transferring $local_script to $remote_script"
+
+    # ディレクトリ作成
+    local remote_dir=$(dirname "$remote_script")
+    if [ "$remote_dir" != "/tmp" ] && [ "$remote_dir" != "." ]; then
+        log_debug "Creating directory: $remote_dir"
+        xdotool type --delay 10 --clearmodifiers "mkdir -p $remote_dir"
+        xdotool key Return
+        sleep 0.5
+    fi
+
+    # ファイル削除（既存ファイルがある場合）
+    xdotool type --delay 10 --clearmodifiers "rm -f ${remote_script}"
+    xdotool key Return
+    sleep 0.5
+
+    # 行単位で追記
+    while IFS= read -r line; do
+        # シングルクォートのエスケープ
+        escaped_line="${line//\'/\'\\\'\'}"
+        xdotool type --delay 5 --clearmodifiers "echo '${escaped_line}' >> ${remote_script}"
+        xdotool key Return
+        sleep 0.2
+    done < "$local_script"
+
+    sleep 1
+    log_debug "Transfer complete: $remote_script"
+}
+
+# タスクスクリプトとラッパースクリプトを転送して実行
+transfer_and_execute_with_github() {
+    local task_script="$1"
+    local wrapper_script="$2"
+    local remote_task="$3"
+    local remote_wrapper="$4"
+
+    log_info "=== GitHub Integration Mode ==="
+    log_info "Task script: $task_script"
+    log_info "Wrapper script: $wrapper_script"
+
+    # ウィンドウをアクティブ化
+    activate_etx_window || return 1
+    sleep 0.5
+
+    # 1. タスクスクリプト転送
+    log_info "Transferring task script..."
+    transfer_script_line_by_line "$task_script" "$remote_task" || return 1
+
+    # 2. ラッパースクリプト転送
+    log_info "Transferring wrapper script..."
+    transfer_script_line_by_line "$wrapper_script" "$remote_wrapper" || return 1
+
+    # 3. 実行権限付与
+    log_info "Setting execute permissions..."
+    xdotool type --delay 10 --clearmodifiers "chmod +x ${remote_task} ${remote_wrapper}"
+    xdotool key Return
+    sleep 1
+
+    # 4. ラッパー実行（バックグラウンド）
+    log_info "Executing wrapper script in background..."
+    xdotool type --delay 10 --clearmodifiers "bash ${remote_wrapper} &"
+    xdotool key Return
+    sleep 0.5
+
+    log_info "Script execution started on ETX"
+    log_info "Results will be uploaded to GitHub"
+    return 0
+}
+
 # 使用方法を表示
 usage() {
     cat << EOF
-Usage: $0 {exec|script|activate|list|test} [args...]
+Usage: $0 {exec|script|script-with-github|activate|list|test} [args...]
 
 Commands:
-  exec <command>              Execute a single command on ETX
-  script <local> [remote]     Transfer and execute a script on ETX
-  activate                    Activate ETX window (bring to front)
-  list                        List available windows
-  test                        Test connection to ETX
+  exec <command>                              Execute a single command on ETX
+  script <local> [remote]                     Transfer and execute a script on ETX
+  script-with-github <task> <wrapper> <r_task> <r_wrapper>
+                                              Transfer task + wrapper scripts for GitHub integration
+  activate                                    Activate ETX window (bring to front)
+  list                                        List available windows
+  test                                        Test connection to ETX
 
 Examples:
   $0 exec 'ls -la'
   $0 script ./my_script.sh /tmp/remote_script.sh
+  $0 script-with-github ./task.sh ./wrapper.sh \$HOME/.etx_tmp/task.sh \$HOME/.etx_tmp/wrapper.sh
   $0 activate
   $0 list
   $0 test
@@ -286,6 +368,16 @@ main() {
             local local_script="$1"
             local remote_script="${2:-}"
             transfer_and_execute "$local_script" "$remote_script"
+            ;;
+        "script-with-github")
+            # タスクスクリプト + ラッパースクリプトの転送・実行
+            shift
+            if [ $# -lt 4 ]; then
+                log_error "Usage: script-with-github <local_task> <local_wrapper> <remote_task> <remote_wrapper>"
+                usage
+                exit 1
+            fi
+            transfer_and_execute_with_github "$1" "$2" "$3" "$4"
             ;;
         "activate")
             # ウィンドウのアクティブ化のみ

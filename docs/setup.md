@@ -296,7 +296,7 @@ GitHub経由の結果回収をテストする場合:
 
 ```bash
 # GitHub設定の確認
-# 1. GitHubリポジトリ: tier4/gion-automation へのアクセス権限
+# 1. GitHubリポジトリ: tier4/palladium-automation へのアクセス権限
 # 2. リモートETX環境でのGitHub認証設定
 
 # テスト実行
@@ -464,7 +464,7 @@ cat ~/.config/Claude/claude_desktop_config.json
 
 2. **タスク実行が5分以上かかっている**
    - タイムアウト時間を調整（環境変数で設定可能に改善予定）
-   - 手動でGitHubリポジトリを確認: https://github.com/tier4/gion-automation/tree/main/results
+   - 手動でGitHubリポジトリを確認: https://github.com/tier4/palladium-automation/tree/main/results
 
 3. **ネットワーク遅延**
    - ポーリング間隔を調整

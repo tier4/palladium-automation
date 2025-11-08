@@ -3,8 +3,8 @@
 !.claude/etx_tasks/.gitkeep
 
 # ワークスペース結果ファイル
-workspace/etx_results/*
-!workspace/etx_results/.gitkeep
+# ローカルアーカイブのみ除外、results/はGit管理
+workspace/etx_results/.archive/
 
 # Node.js
 node_modules/

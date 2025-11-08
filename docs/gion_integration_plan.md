@@ -123,13 +123,13 @@ tier4/gion/
 
 ### Option C: 別リポジトリ維持
 
-`tier4/gion` と `tier4/gion-automation` を分離
+`tier4/gion` と `tier4/palladium-automation` を分離
 
 ```
 tier4/gion/              # 既存プロジェクト（変更なし）
 └── (既存の構造のまま)
 
-tier4/gion-automation/   # 新規リポジトリ
+tier4/palladium-automation/   # 新規リポジトリ
 ├── scripts/
 ├── mcp-servers/
 ├── results/

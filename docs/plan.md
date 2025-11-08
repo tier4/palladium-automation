@@ -156,7 +156,7 @@ echo '#!/bin/bash\necho "Hello from remote"' > /tmp/test.sh
 4. タイムアウト処理
 
 **注意点**:
-- GitHubリポジトリ: `tier4/gion-automation`
+- GitHubリポジトリ: `tier4/palladium-automation`
 - リモート実行ディレクトリ: `/home/khenmi/etx_automation`
 - 結果ファイル形式: `{task_name}_{timestamp}_result.txt`
 

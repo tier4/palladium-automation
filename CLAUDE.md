@@ -55,7 +55,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ETXユーザー: `khenmi`
 - ETXホスト: `ip-172-17-34-126`
 - リモート作業ディレクトリ: `/home/khenmi/workspace`
-- 結果共有用GitHubリポジトリ: `tier4/gion-automation`
+- 結果共有用GitHubリポジトリ: `tier4/palladium-automation`
 
 ## アーキテクチャ
 
@@ -129,14 +129,42 @@ ETX Xtermの画面をPNG形式でキャプチャします。
 
 ### 3. Claude Code統合スクリプト (`scripts/claude_to_etx.sh`)
 
-Claude Codeが生成したスクリプトをETXで実行するための統合スクリプトです。
+Claude Codeが生成したスクリプトをETXで実行し、GitHub経由で結果を自動回収する統合スクリプトです。
 
-**注**: 現在の実装では`etx_automation.sh`の機能を使用しています。GitHub経由の結果回収機能は今後の拡張として計画されています。
+**実装済み機能**:
+- ✅ xdotool経由でのスクリプト転送（SCP不要）
+- ✅ GitHub経由の結果自動回収
+- ✅ タスクIDディレクトリ方式（複数人並行実行対応）
+- ✅ 取得後の自動クリーンアップ
+- ✅ ローカルアーカイブ（`.archive/YYYYMM/`）
+- ✅ 長期実行タスク対応（可変タイムアウト）
 
 **使用例**:
 ```bash
+# 基本的な使用方法
 ./scripts/claude_to_etx.sh /path/to/task_script.sh
+
+# 長時間タスク（8時間タイムアウト）
+GITHUB_POLL_TIMEOUT=28800 ./scripts/claude_to_etx.sh /path/to/long_task.sh
+
+# 結果の保存先
+# - GitHub: https://github.com/tier4/palladium-automation/tree/main/results/<task_id>/
+# - ローカルアーカイブ: workspace/etx_results/.archive/YYYYMM/
 ```
+
+**環境変数**:
+- `GITHUB_POLL_TIMEOUT`: タイムアウト（秒）、デフォルト: 1800（30分）
+- `GITHUB_POLL_INTERVAL`: ポーリング間隔（秒）、デフォルト: 10
+- `SAVE_RESULTS_LOCALLY`: ローカル保存、デフォルト: 1
+
+**動作フロー**:
+1. タスクスクリプトとラッパースクリプトを生成
+2. xdotoolでETXに転送（行単位echo方式）
+3. ETXでバックグラウンド実行
+4. 結果をGitHubにpush（タスクIDディレクトリ）
+5. ローカルでポーリング＆結果取得
+6. ローカルアーカイブに保存
+7. GitHubから自動削除
 
 ## MCP Server統合
 
@@ -148,10 +176,17 @@ Claude CodeがETXを直接制御できるようにするカスタムMCPサーバ
 
 **提供ツール**:
 - `execute_on_etx`: ETXで単一コマンド実行
-- `run_script_on_etx`: スクリプト転送・実行
+- `run_script_on_etx`: スクリプト転送・実行・GitHub結果回収（タイムアウト設定可能）
 - `activate_etx_window`: ETXウィンドウのアクティブ化
 - `list_windows`: ウィンドウ一覧表示
 - `test_etx_connection`: 接続テスト
+
+**run_script_on_etxの新機能**:
+- GitHub経由の自動結果回収
+- タスクIDディレクトリ方式
+- 長期実行タスク対応（`timeout`パラメータ）
+- ローカルアーカイブ自動保存
+- 取得後の自動クリーンアップ
 
 **セットアップ**:
 ```bash

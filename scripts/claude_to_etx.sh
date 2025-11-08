@@ -13,7 +13,7 @@ ETX_AUTOMATION_SCRIPT="$SCRIPT_DIR/etx_automation.sh"
 ETX_SCRIPTS_DIR="/home/khenmi/etx_automation"
 ETX_USER="khenmi"
 ETX_HOST="ip-172-17-34-126"
-GITHUB_REPO="tier4/gion-automation"
+GITHUB_REPO="tier4/palladium-automation"
 RESULTS_DIR="$PROJECT_ROOT/workspace/etx_results"
 
 # カラー出力
@@ -56,161 +56,263 @@ run_claude_task() {
 
     local task_name=$(basename "$task_file" .sh)
     local timestamp=$(date +%Y%m%d_%H%M%S)
-    local remote_script="${ETX_SCRIPTS_DIR}/${task_name}_${timestamp}.sh"
-    local result_file="${task_name}_${timestamp}_result.txt"
+    local task_id="${USER}_${timestamp}"
+    local result_file="${task_name}_result.txt"
 
     log_info "=== Running Claude Code Task: $task_name ==="
+    log_info "Task ID: $task_id"
     log_info "Timestamp: $timestamp"
 
     # 1. 結果収集用のラッパースクリプトを作成
     local wrapper_script="/tmp/wrapper_${timestamp}.sh"
-    log_info "Creating wrapper script: $wrapper_script"
+    log_info "Creating wrapper script with GitHub integration..."
 
     cat > "$wrapper_script" << 'EOF_WRAPPER'
 #!/bin/bash
-# Auto-generated wrapper script
+# Auto-generated wrapper script for GitHub result collection
 
-TASK_SCRIPT="__REMOTE_SCRIPT__"
+TASK_SCRIPT="__REMOTE_TASK_SCRIPT__"
 RESULT_FILE="__RESULT_FILE__"
 GITHUB_REPO="__GITHUB_REPO__"
+TASK_ID="__TASK_ID__"
+RESULT_PATH="$HOME/.etx_tmp/${RESULT_FILE}"
+REPO_DIR="$HOME/.etx_tmp/etx_results"
 
-echo "=== Wrapper Script Started ===" | tee /tmp/${RESULT_FILE}
-echo "Date: $(date)" | tee -a /tmp/${RESULT_FILE}
-echo "Hostname: $(hostname)" | tee -a /tmp/${RESULT_FILE}
-echo "User: $(whoami)" | tee -a /tmp/${RESULT_FILE}
-echo "" | tee -a /tmp/${RESULT_FILE}
+echo "=== Wrapper Script Started ===" | tee "${RESULT_PATH}"
+echo "Date: $(date)" | tee -a "${RESULT_PATH}"
+echo "Hostname: $(hostname)" | tee -a "${RESULT_PATH}"
+echo "User: $(whoami)" | tee -a "${RESULT_PATH}"
+echo "Task ID: ${TASK_ID}" | tee -a "${RESULT_PATH}"
+echo "Task Script: ${TASK_SCRIPT}" | tee -a "${RESULT_PATH}"
+echo "" | tee -a "${RESULT_PATH}"
 
 # タスク実行
-echo "=== Task Start: $(date) ===" | tee -a /tmp/${RESULT_FILE}
-if bash ${TASK_SCRIPT} >> /tmp/${RESULT_FILE} 2>&1; then
-    echo "=== Task End: $(date) ===" | tee -a /tmp/${RESULT_FILE}
-    echo "Status: SUCCESS" | tee -a /tmp/${RESULT_FILE}
+echo "=== Task Start: $(date) ===" | tee -a "${RESULT_PATH}"
+if bash "${TASK_SCRIPT}" >> "${RESULT_PATH}" 2>&1; then
+    echo "=== Task End: $(date) ===" | tee -a "${RESULT_PATH}"
+    echo "Status: SUCCESS" | tee -a "${RESULT_PATH}"
+    EXIT_CODE=0
 else
-    echo "=== Task End: $(date) ===" | tee -a /tmp/${RESULT_FILE}
-    echo "Status: FAILED (exit code: $?)" | tee -a /tmp/${RESULT_FILE}
+    EXIT_CODE=$?
+    echo "=== Task End: $(date) ===" | tee -a "${RESULT_PATH}"
+    echo "Status: FAILED (exit code: ${EXIT_CODE})" | tee -a "${RESULT_PATH}"
 fi
-echo "" | tee -a /tmp/${RESULT_FILE}
+echo "" | tee -a "${RESULT_PATH}"
+
+# Git認証確認
+echo "=== Checking Git Configuration ===" | tee -a "${RESULT_PATH}"
+if ! git config --global user.name >/dev/null 2>&1; then
+    echo "Setting default git user.name..." | tee -a "${RESULT_PATH}"
+    git config --global user.name "ETX Automation"
+fi
+
+if ! git config --global user.email >/dev/null 2>&1; then
+    echo "Setting default git user.email..." | tee -a "${RESULT_PATH}"
+    git config --global user.email "etx@automation.local"
+fi
 
 # 結果をGitHubにpush
-echo "=== Uploading results to GitHub ===" | tee -a /tmp/${RESULT_FILE}
-cd /tmp
+echo "=== Uploading results to GitHub ===" | tee -a "${RESULT_PATH}"
+cd "$HOME/.etx_tmp" || {
+    echo "ERROR: Cannot change to .etx_tmp directory" | tee -a "${RESULT_PATH}"
+    exit 1
+}
 
-# GitHubリポジトリのクローンまたは更新
-if [ -d "etx_results/.git" ]; then
-    echo "Updating existing repository..." | tee -a /tmp/${RESULT_FILE}
-    cd etx_results
-    git pull origin main >> /tmp/${RESULT_FILE} 2>&1
+# リポジトリの準備（クローンまたは更新）
+if [ -d "${REPO_DIR}/.git" ]; then
+    echo "Repository exists, updating..." | tee -a "${RESULT_PATH}"
+    cd "${REPO_DIR}"
+
+    # リモート設定の確認
+    if ! git remote get-url origin >/dev/null 2>&1; then
+        echo "WARNING: Git remote not configured, re-cloning..." | tee -a "${RESULT_PATH}"
+        cd ..
+        rm -rf etx_results
+        git clone "https://github.com/${GITHUB_REPO}.git" etx_results >> "${RESULT_PATH}" 2>&1
+        cd etx_results
+    else
+        # pull --rebase で最新を取得
+        if ! git pull --rebase origin main >> "${RESULT_PATH}" 2>&1; then
+            echo "WARNING: git pull failed, re-cloning..." | tee -a "${RESULT_PATH}"
+            cd ..
+            rm -rf etx_results
+            git clone "https://github.com/${GITHUB_REPO}.git" etx_results >> "${RESULT_PATH}" 2>&1
+            cd etx_results
+        fi
+    fi
 else
-    echo "Cloning repository..." | tee -a /tmp/${RESULT_FILE}
-    git clone https://github.com/${GITHUB_REPO}.git etx_results >> /tmp/${RESULT_FILE} 2>&1
+    echo "Cloning repository for the first time..." | tee -a "${RESULT_PATH}"
+    if ! git clone "https://github.com/${GITHUB_REPO}.git" etx_results >> "${RESULT_PATH}" 2>&1; then
+        echo "ERROR: Failed to clone repository" | tee -a "${RESULT_PATH}"
+        echo "Please check GitHub authentication and network" | tee -a "${RESULT_PATH}"
+        exit 1
+    fi
     cd etx_results
 fi
 
-# 結果ディレクトリの作成
-mkdir -p results
+# タスクIDディレクトリを作成
+mkdir -p "results/${TASK_ID}"
 
-# 結果ファイルのコピー
-cp /tmp/${RESULT_FILE} results/
-git add results/${RESULT_FILE}
-
-# コミットとプッシュ
-git config user.name "ETX Automation" 2>/dev/null || true
-git config user.email "etx@automation.local" 2>/dev/null || true
-git commit -m "ETX Task Result: ${RESULT_FILE}" >> /tmp/${RESULT_FILE} 2>&1
-
-if git push origin main >> /tmp/${RESULT_FILE} 2>&1; then
-    echo "Result uploaded to GitHub: results/${RESULT_FILE}" | tee -a /tmp/${RESULT_FILE}
-else
-    echo "WARNING: Failed to push to GitHub" | tee -a /tmp/${RESULT_FILE}
+# 結果ファイルをコピー
+if ! cp "${RESULT_PATH}" "results/${TASK_ID}/"; then
+    echo "ERROR: Failed to copy result file" | tee -a "${RESULT_PATH}"
+    exit 1
 fi
 
-echo "=== Wrapper Script Completed ===" | tee -a /tmp/${RESULT_FILE}
+git add "results/${TASK_ID}/${RESULT_FILE}"
+git commit -m "Task Result: ${TASK_ID}" >> "${RESULT_PATH}" 2>&1 || {
+    echo "WARNING: git commit failed (possibly nothing to commit)" | tee -a "${RESULT_PATH}"
+}
+
+# Pushリトライ（最大3回）
+echo "Pushing to GitHub..." | tee -a "${RESULT_PATH}"
+RETRY_COUNT=0
+MAX_RETRIES=3
+PUSH_SUCCESS=0
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if git push origin main >> "${RESULT_PATH}" 2>&1; then
+        echo "SUCCESS: Result uploaded to GitHub: results/${TASK_ID}/${RESULT_FILE}" | tee -a "${RESULT_PATH}"
+        PUSH_SUCCESS=1
+        break
+    else
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            echo "Push failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..." | tee -a "${RESULT_PATH}"
+            git pull --rebase origin main >> "${RESULT_PATH}" 2>&1
+            sleep 2
+        else
+            echo "ERROR: Failed to push after $MAX_RETRIES attempts" | tee -a "${RESULT_PATH}"
+            echo "Please check GitHub authentication" | tee -a "${RESULT_PATH}"
+        fi
+    fi
+done
+
+if [ $PUSH_SUCCESS -eq 0 ]; then
+    echo "WARNING: Result not uploaded to GitHub" | tee -a "${RESULT_PATH}"
+fi
+
+echo "=== Wrapper Script Completed (Exit Code: ${EXIT_CODE}) ===" | tee -a "${RESULT_PATH}"
+exit ${EXIT_CODE}
 EOF_WRAPPER
 
     # プレースホルダーを置換
-    sed -i "s|__REMOTE_SCRIPT__|${remote_script}|g" "$wrapper_script"
+    local remote_task_script="\$HOME/.etx_tmp/task_${timestamp}.sh"
+    local remote_wrapper_script="\$HOME/.etx_tmp/wrapper_${timestamp}.sh"
+
+    sed -i "s|__REMOTE_TASK_SCRIPT__|${remote_task_script}|g" "$wrapper_script"
     sed -i "s|__RESULT_FILE__|${result_file}|g" "$wrapper_script"
     sed -i "s|__GITHUB_REPO__|${GITHUB_REPO}|g" "$wrapper_script"
+    sed -i "s|__TASK_ID__|${task_id}|g" "$wrapper_script"
 
-    # 2. タスクスクリプトとラッパーを転送
-    log_info "Transferring scripts to ETX..."
+    # 2. タスクスクリプトとラッパーを転送・実行（xdotool方式）
+    log_info "Transferring and executing scripts on ETX via GUI automation..."
 
-    if ! scp "$task_file" "${ETX_USER}@${ETX_HOST}:${remote_script}" 2>&1; then
-        log_error "Failed to transfer task script"
+    if ! "$ETX_AUTOMATION_SCRIPT" script-with-github \
+        "$task_file" \
+        "$wrapper_script" \
+        "$remote_task_script" \
+        "$remote_wrapper_script"; then
+        log_error "Failed to transfer and execute scripts"
         rm -f "$wrapper_script"
         return 1
     fi
 
-    if ! scp "$wrapper_script" "${ETX_USER}@${ETX_HOST}:/tmp/wrapper_${timestamp}.sh" 2>&1; then
-        log_error "Failed to transfer wrapper script"
-        rm -f "$wrapper_script"
-        return 1
-    fi
-
-    log_info "Transfer complete"
+    log_info "Scripts transferred and execution started on ETX"
     rm -f "$wrapper_script"
 
-    # 3. ETXで実行（GUI自動操作）
-    log_info "Executing on ETX via GUI automation..."
+    # 3. 結果をGitHubから取得（ポーリング）
+    log_info "Waiting for results from GitHub (polling every ${poll_interval:-10}s)..."
+    log_info "Note: For long-running tasks, this may take a while..."
 
-    # 実行権限付与
-    if ! "$ETX_AUTOMATION_SCRIPT" exec "chmod +x ${remote_script} /tmp/wrapper_${timestamp}.sh"; then
-        log_error "Failed to set execute permissions"
-        return 1
-    fi
-    sleep 1
-
-    # バックグラウンドでラッパースクリプト実行
-    if ! "$ETX_AUTOMATION_SCRIPT" exec "bash /tmp/wrapper_${timestamp}.sh &"; then
-        log_error "Failed to execute wrapper script"
-        return 1
-    fi
-
-    log_info "Script execution started on ETX"
-
-    # 4. 結果をGitHubから取得（ポーリング）
-    log_info "Waiting for results (polling GitHub)..."
-    local max_wait=300  # 5分
+    local max_wait=${GITHUB_POLL_TIMEOUT:-1800}  # デフォルト30分（長期実行対応）
+    local poll_interval=${GITHUB_POLL_INTERVAL:-10}
     local waited=0
-    local poll_interval=10
+    local result_subdir="results/${task_id}"
 
+    # GitHubリポジトリのセットアップ
+    cd "$RESULTS_DIR"
+    if [ ! -d ".git" ]; then
+        log_info "Cloning GitHub repository for the first time..."
+        if ! git clone "https://github.com/${GITHUB_REPO}.git" . >/dev/null 2>&1; then
+            log_error "Failed to clone GitHub repository"
+            log_info "Troubleshooting:"
+            log_info "  1. Check repository exists: https://github.com/${GITHUB_REPO}"
+            log_info "  2. Check GitHub authentication (git clone test)"
+            log_info "  3. Check network connectivity"
+            return 1
+        fi
+    fi
+
+    # ポーリングループ
     while [ $waited -lt $max_wait ]; do
-        # GitHubから最新を取得
-        cd "$RESULTS_DIR"
-
         log_debug "Polling GitHub (${waited}s / ${max_wait}s)..."
 
-        if [ -d ".git" ]; then
-            git pull origin main >/dev/null 2>&1 || {
-                log_warn "Failed to pull from GitHub (will retry)"
-            }
+        # GitHubから最新を取得
+        if git pull origin main >/dev/null 2>&1; then
+            log_debug "Successfully pulled from GitHub"
         else
-            git clone "https://github.com/${GITHUB_REPO}.git" . >/dev/null 2>&1 || {
-                log_warn "Failed to clone from GitHub (will retry)"
-            }
+            log_warn "Failed to pull from GitHub (will retry)"
         fi
 
         # 結果ファイルの確認
-        if [ -f "results/${result_file}" ]; then
+        if [ -f "${result_subdir}/${result_file}" ]; then
             log_info "=== Task Result Found ==="
             echo ""
-            cat "results/${result_file}"
+            cat "${result_subdir}/${result_file}"
             echo ""
-            log_info "Result file saved to: $RESULTS_DIR/results/${result_file}"
-            return 0
+
+            # ローカルに永続保存（オプション）
+            if [ "${SAVE_RESULTS_LOCALLY:-1}" = "1" ]; then
+                local archive_dir="$RESULTS_DIR/.archive/$(date +%Y%m)"
+                mkdir -p "$archive_dir"
+                cp "${result_subdir}/${result_file}" "$archive_dir/${task_id}_${result_file}"
+                log_info "Result archived locally: $archive_dir/${task_id}_${result_file}"
+            fi
+
+            # GitHubから削除（取得後クリーンアップ）
+            log_info "Cleaning up task directory from GitHub..."
+            git rm -rf "${result_subdir}" >/dev/null 2>&1 || {
+                log_warn "Failed to remove task directory (may already be deleted)"
+            }
+
+            if [ -n "$(git status --porcelain)" ]; then
+                git commit -m "cleanup: Task ${task_id} retrieved by ${USER}@$(hostname)" >/dev/null 2>&1
+
+                if git push origin main >/dev/null 2>&1; then
+                    log_debug "Task directory cleaned up from GitHub"
+                else
+                    log_warn "Failed to push cleanup (will be handled by scheduled cleanup)"
+                fi
+            fi
+
+            # 成功/失敗判定
+            if grep -q "Status: SUCCESS" "${result_subdir}/${result_file}" 2>/dev/null || \
+               grep -q "Status: SUCCESS" "$archive_dir/${task_id}_${result_file}" 2>/dev/null; then
+                log_info "Task completed successfully on ETX"
+                return 0
+            else
+                log_error "Task failed on ETX (see result above)"
+                return 1
+            fi
         fi
 
         sleep $poll_interval
         waited=$((waited + poll_interval))
 
+        # 30秒ごとに進捗表示
         if [ $((waited % 30)) -eq 0 ]; then
             log_info "Still waiting... (${waited}s / ${max_wait}s)"
         fi
     done
 
     log_error "Timeout waiting for results after ${max_wait}s"
-    log_info "The task may still be running on ETX"
-    log_info "Check manually: https://github.com/${GITHUB_REPO}/tree/main/results"
+    log_info "The task may still be running on ETX, or GitHub push failed"
+    log_info "Troubleshooting:"
+    log_info "  1. Check ETX Xterm window (script may still be running)"
+    log_info "  2. Check GitHub: https://github.com/${GITHUB_REPO}/tree/main/results/${task_id}"
+    log_info "  3. Check local result file on ETX: \$HOME/.etx_tmp/${result_file}"
+    log_info "  4. Check ETX GitHub authentication: ssh to ETX and run 'git config --list'"
     return 1
 }
 
@@ -220,21 +322,33 @@ usage() {
 Usage: $0 <task_script.sh>
 
 This script:
-  1. Transfers Claude Code generated script to ETX
-  2. Executes it via GUI automation
-  3. Collects results via GitHub
+  1. Creates a wrapper script with GitHub integration
+  2. Transfers both task and wrapper scripts to ETX via xdotool
+  3. Executes the task on ETX
+  4. Collects results via GitHub (polling)
+  5. Archives results locally and cleans up GitHub
 
 Arguments:
   task_script.sh    Path to the task script to execute
 
 Environment Variables:
-  ETX_USER          SSH user (default: khenmi)
-  ETX_HOST          SSH host (default: ip-172-17-34-126)
-  GITHUB_REPO       GitHub repo for results (default: tier4/gion-automation)
-  DEBUG             Set to 1 for debug output
+  ETX_USER                SSH user (default: khenmi)
+  ETX_HOST                SSH host (default: ip-172-17-34-126)
+  GITHUB_REPO             GitHub repo for results (default: tier4/palladium-automation)
+  GITHUB_POLL_TIMEOUT     Max wait time in seconds (default: 1800 = 30min)
+  GITHUB_POLL_INTERVAL    Polling interval in seconds (default: 10)
+  SAVE_RESULTS_LOCALLY    Save results to .archive/ (default: 1)
+  DEBUG                   Set to 1 for debug output
 
 Example:
   $0 .claude/etx_tasks/test_task.sh
+
+  # For very long tasks (e.g., overnight builds)
+  GITHUB_POLL_TIMEOUT=28800 $0 .claude/etx_tasks/long_build.sh
+
+Results:
+  - GitHub: https://github.com/tier4/palladium-automation/tree/main/results/
+  - Local archive: workspace/etx_results/.archive/YYYYMM/
 
 EOF
 }

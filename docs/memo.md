@@ -219,7 +219,7 @@ CLAUDE_OUTPUT_DIR="$HOME/.claude/etx_tasks"
 ETX_SCRIPTS_DIR="/home/khenmi/etx_automation"
 ETX_USER="khenmi"
 ETX_HOST="ip-172-17-34-126"
-GITHUB_REPO="tier4/gion-automation"
+GITHUB_REPO="tier4/palladium-automation"
 RESULTS_DIR="$HOME/workspace/etx_results"
 
 mkdir -p "$CLAUDE_OUTPUT_DIR"

@@ -93,7 +93,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "run_script_on_etx",
-        description: "Transfer and execute a bash script on ETX with result collection via GitHub",
+        description: "Transfer and execute a bash script on ETX with automatic GitHub result collection. Results are archived locally and task directories are cleaned up from GitHub after retrieval. Supports long-running tasks (default timeout: 30 minutes).",
         inputSchema: {
           type: "object",
           properties: {
@@ -104,6 +104,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             description: {
               type: "string",
               description: "A brief description of what this script does"
+            },
+            timeout: {
+              type: "number",
+              description: "Optional: Maximum wait time in seconds for result collection (default: 1800 = 30 minutes). For long tasks, set higher (e.g., 28800 = 8 hours)"
             }
           },
           required: ["script_content"]
@@ -173,15 +177,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       await fs.writeFile(scriptPath, args.script_content, { mode: 0o755 });
 
       try {
-        const result = await executeCommand(CLAUDE_TO_ETX_SCRIPT, [scriptPath]);
+        // タイムアウト設定を環境変数で渡す
+        const env = {};
+        if (args.timeout) {
+          env.GITHUB_POLL_TIMEOUT = args.timeout.toString();
+        }
+
+        const result = await executeCommand(CLAUDE_TO_ETX_SCRIPT, [scriptPath], { env });
 
         return {
           content: [{
             type: "text",
-            text: `Script executed on ETX\n\n` +
-                  `Description: ${args.description || 'N/A'}\n\n` +
+            text: `Script executed on ETX with GitHub result collection\n\n` +
+                  `Description: ${args.description || 'N/A'}\n` +
+                  (args.timeout ? `Timeout: ${args.timeout}s\n` : '') +
+                  `\n` +
                   `Result:\n${result.stdout}\n` +
-                  (result.stderr ? `\nErrors/Warnings:\n${result.stderr}` : '')
+                  (result.stderr ? `\nWarnings:\n${result.stderr}` : '')
           }]
         };
       } finally {

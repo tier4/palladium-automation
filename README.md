@@ -13,7 +13,7 @@ ETX/Palladium環境での自動化ツール。Tier4ハードウェアプロジ�
 
 ## 概要
 
-このプロジェクトは、特殊なネットワーク制約下(ローカルからリモートへの片方向SCP転送のみ可能)で、GUI自動操作とGitHub経由の結果回収を組み合わせた自動化を実現します。
+このプロジェクトは、特殊なネットワーク制約下で、**GUI自動操作（xdotool）とGitHub経由の結果回収**を組み合わせた自動化を実現します。
 
 ### アーキテクチャ
 
@@ -21,13 +21,22 @@ ETX/Palladium環境での自動化ツール。Tier4ハードウェアプロジ�
 [ローカル RHEL8 + GNOME]
     ↓ Claude Code動作
     ↓ スクリプト生成
-    ↓ SCP転送
+    ↓ xdotool経由でETXに転送（行単位echo方式）
     →→→ [リモート RHEL8 (ETX/Palladium)]
             ↓ GUI自動操作で実行
-            ↓ 結果をGitHub経由で返却
+            ↓ 結果をGitHub（タスクIDディレクトリ）にpush
             ↓
-[ローカル] ←←← GitHub経由で結果取得
+[ローカル] ←←← GitHub経由で結果取得・自動クリーンアップ
 ```
+
+### 主要機能
+
+- ✅ **xdotool方式のスクリプト転送**: ネットワーク制約を回避
+- ✅ **GitHub経由の結果自動回収**: ポーリングで結果取得
+- ✅ **タスクIDディレクトリ方式**: 複数人並行実行対応
+- ✅ **自動クリーンアップ**: 取得後即削除 + GitHub Actions定期削除（3日後）
+- ✅ **ローカルアーカイブ**: `.archive/YYYYMM/` に永続保存
+- ✅ **長期実行タスク対応**: 可変タイムアウト（デフォルト30分）
 
 ## ディレクトリ構造
 
@@ -44,11 +53,19 @@ palladium-automation/
 ├── .claude/
 │   └── etx_tasks/             # Claude Codeが生成したタスクの一時保存
 ├── workspace/
-│   └── etx_results/           # GitHubから取得した実行結果
+│   └── etx_results/           # GitHub同期と結果アーカイブ
+│       ├── .git/              # tier4/palladium-automation との同期
+│       ├── results/           # 一時的なタスク結果（取得後削除）
+│       └── .archive/          # ローカル永続保存（Git管理外）
+├── .github/
+│   └── workflows/
+│       └── cleanup-old-results.yml  # 3日後の自動削除
 ├── docs/
 │   ├── memo.md                # 技術検討メモ
 │   ├── setup.md               # セットアップガイド
-│   └── plan.md                # 実装プラン
+│   ├── plan.md                # 実装プラン
+│   ├── github_integration_plan.md         # GitHub統合プラン
+│   └── github_integration_implementation.md  # 実装完了報告
 ├── CLAUDE.md                  # Claude Code向けリポジトリガイド
 └── README.md                  # このファイル
 ```
