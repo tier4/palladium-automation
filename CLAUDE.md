@@ -127,25 +127,26 @@ ETX Xtermの画面をPNG形式でキャプチャします。
 - PNG形式で保存（netpbm使用）
 - Claude Codeから画像として確認可能
 
-### 3. Claude Code統合スクリプト (`scripts/claude_to_etx.sh`)
+### 3. SSH統合スクリプト (`scripts/claude_to_ga53pd01.sh`) **推奨**
 
-Claude Codeが生成したスクリプトをETXで実行し、GitHub経由で結果を自動回収する統合スクリプトです。
+SSH経由でga53pd01コンピュートサーバーにスクリプトを転送・実行し、GitHub経由で結果を自動回収する統合スクリプトです。
 
-**実装済み機能**:
-- ✅ xdotool経由でのスクリプト転送（SCP不要）
+**特徴**:
+- ✅ SSH heredoc方式による高速・安定したスクリプト転送
+- ✅ GUI操作不要（xdotoolの問題を解消）
 - ✅ GitHub経由の結果自動回収
 - ✅ タスクIDディレクトリ方式（複数人並行実行対応）
-- ✅ 取得後の自動クリーンアップ
+- ✅ 実行後のリモートスクリプト自動削除
 - ✅ ローカルアーカイブ（`.archive/YYYYMM/`）
 - ✅ 長期実行タスク対応（可変タイムアウト）
 
 **使用例**:
 ```bash
 # 基本的な使用方法
-./scripts/claude_to_etx.sh /path/to/task_script.sh
+./scripts/claude_to_ga53pd01.sh /path/to/task_script.sh
 
 # 長時間タスク（8時間タイムアウト）
-GITHUB_POLL_TIMEOUT=28800 ./scripts/claude_to_etx.sh /path/to/long_task.sh
+GITHUB_POLL_TIMEOUT=28800 ./scripts/claude_to_ga53pd01.sh /path/to/long_task.sh
 
 # 結果の保存先
 # - GitHub: https://github.com/tier4/palladium-automation/tree/main/results/<task_id>/
@@ -153,18 +154,37 @@ GITHUB_POLL_TIMEOUT=28800 ./scripts/claude_to_etx.sh /path/to/long_task.sh
 ```
 
 **環境変数**:
+- `REMOTE_HOST`: リモートホスト名、デフォルト: ga53pd01
+- `REMOTE_USER`: SSHユーザー名、デフォルト: henmi
+- `PROJECT_NAME`: プロジェクト名、デフォルト: tierivemu
 - `GITHUB_POLL_TIMEOUT`: タイムアウト（秒）、デフォルト: 1800（30分）
 - `GITHUB_POLL_INTERVAL`: ポーリング間隔（秒）、デフォルト: 10
 - `SAVE_RESULTS_LOCALLY`: ローカル保存、デフォルト: 1
 
 **動作フロー**:
 1. タスクスクリプトとラッパースクリプトを生成
+2. SSH heredocでga53pd01に転送
+3. ga53pd01でバックグラウンド実行
+4. 実行完了後、リモートスクリプトを自動削除
+5. 結果をGitHubにpush（タスクIDディレクトリ）
+6. ローカルでポーリング＆結果取得
+7. ローカルアーカイブに保存
+8. GitHubから自動削除
+
+**リモートスクリプト保存先**: `/proj/tierivemu/work/henmi/etx_tmp/`
+
+### 4. GUI統合スクリプト (`scripts/claude_to_etx.sh`) **レガシー**
+
+xdotoolを使用してETXターミナルでスクリプトを実行する旧方式です。
+
+**注意**: GUI操作による不安定性のため、`claude_to_ga53pd01.sh`の使用を推奨します。
+
+**動作フロー**:
+1. タスクスクリプトとラッパースクリプトを生成
 2. xdotoolでETXに転送（行単位echo方式）
 3. ETXでバックグラウンド実行
-4. 結果をGitHubにpush（タスクIDディレクトリ）
-5. ローカルでポーリング＆結果取得
-6. ローカルアーカイブに保存
-7. GitHubから自動削除
+4. 結果をGitHubにpush
+5. ローカルで結果取得
 
 ## MCP Server統合
 

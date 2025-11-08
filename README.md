@@ -13,17 +13,18 @@ ETX/Palladium環境での自動化ツール。Tier4ハードウェアプロジ�
 
 ## 概要
 
-このプロジェクトは、特殊なネットワーク制約下で、**GUI自動操作（xdotool）とGitHub経由の結果回収**を組み合わせた自動化を実現します。
+このプロジェクトは、特殊なネットワーク制約下で、**SSH経由のスクリプト転送とGitHub経由の結果回収**を組み合わせた自動化を実現します。
 
 ### アーキテクチャ
 
 ```
-[ローカル RHEL8 + GNOME]
+[ローカル RHEL8 (ip-172-17-34-126)]
     ↓ Claude Code動作
     ↓ スクリプト生成
-    ↓ xdotool経由でETXに転送（行単位echo方式）
-    →→→ [リモート RHEL8 (ETX/Palladium)]
-            ↓ GUI自動操作で実行
+    ↓ SSH heredoc経由でga53pd01に転送
+    →→→ [リモート ga53pd01 (Palladium Compute Server)]
+            ↓ バックグラウンド実行
+            ↓ 実行完了後スクリプト自動削除
             ↓ 結果をGitHub（タスクIDディレクトリ）にpush
             ↓
 [ローカル] ←←← GitHub経由で結果取得・自動クリーンアップ
@@ -31,10 +32,12 @@ ETX/Palladium環境での自動化ツール。Tier4ハードウェアプロジ�
 
 ### 主要機能
 
-- ✅ **xdotool方式のスクリプト転送**: ネットワーク制約を回避
+- ✅ **SSH heredoc方式のスクリプト転送**: 高速・安定・GUI操作不要
 - ✅ **GitHub経由の結果自動回収**: ポーリングで結果取得
 - ✅ **タスクIDディレクトリ方式**: 複数人並行実行対応
-- ✅ **自動クリーンアップ**: 取得後即削除 + GitHub Actions定期削除（3日後）
+- ✅ **自動クリーンアップ**:
+  - リモートスクリプト: 実行完了後自動削除
+  - GitHub結果: 取得後即削除
 - ✅ **ローカルアーカイブ**: `.archive/YYYYMM/` に永続保存
 - ✅ **長期実行タスク対応**: 可変タイムアウト（デフォルト30分）
 
@@ -43,9 +46,10 @@ ETX/Palladium環境での自動化ツール。Tier4ハードウェアプロジ�
 ```
 palladium-automation/
 ├── scripts/                    # 自動化スクリプト
+│   ├── claude_to_ga53pd01.sh  # SSH統合スクリプト（推奨）
+│   ├── claude_to_etx.sh       # GUI統合スクリプト（レガシー）
 │   ├── etx_automation.sh      # GUI自動操作スクリプト
-│   ├── capture_etx_window.sh  # ETX画面キャプチャスクリプト
-│   └── claude_to_etx.sh       # Claude Code統合スクリプト
+│   └── capture_etx_window.sh  # ETX画面キャプチャスクリプト
 ├── mcp-servers/               # カスタムMCPサーバー
 │   └── etx-automation/        # ETX自動化MCPサーバー
 │       ├── index.js
@@ -72,20 +76,21 @@ palladium-automation/
 
 ## 環境要件
 
-### ローカル環境
-- OS: RHEL8 + GNOME
+### ローカル環境 (ip-172-17-34-126)
+- OS: RHEL8
 - 必須ツール:
-  - xdotool
-  - wmctrl
-  - xclip
-  - netpbm-progs（画面キャプチャ用）
+  - SSH (公開鍵認証設定済み)
   - Node.js (MCP Server用)
   - Git
+- オプション（GUIベース方式を使う場合）:
+  - xdotool, wmctrl, xclip
+  - netpbm-progs（画面キャプチャ用）
 
-### リモート環境(ETX)
+### リモート環境 (ga53pd01)
 - OS: RHEL8
-- Exceed TurboX Client経由でアクセス
-- ETX Xterm起動可能（Start Xterm）
+- Palladium Compute Server
+- SSH経由でアクセス可能
+- `/proj/tierivemu/work/henmi/` へのアクセス権限
 
 ## クイックスタート
 
@@ -179,10 +184,29 @@ claude mcp list
 - デバッグ時のスクリーンショット取得
 - Claude Codeから画像として確認可能
 
-### Claude Code統合
+### SSH統合スクリプト（推奨）
 
 ```bash
-# Claude Codeが生成したスクリプトを実行
+# ga53pd01でスクリプトを実行（SSH heredoc方式）
+./scripts/claude_to_ga53pd01.sh /path/to/task_script.sh
+
+# 長時間タスク（8時間タイムアウト）
+GITHUB_POLL_TIMEOUT=28800 ./scripts/claude_to_ga53pd01.sh /path/to/long_task.sh
+
+# デバッグモード
+DEBUG=1 ./scripts/claude_to_ga53pd01.sh /path/to/task_script.sh
+```
+
+**特徴**:
+- 高速・安定（GUI操作不要）
+- 実行後リモートスクリプト自動削除
+- 結果はGitHub経由で自動回収
+- ローカルアーカイブに保存
+
+### GUI統合スクリプト（レガシー）
+
+```bash
+# xdotool方式（非推奨）
 ./scripts/claude_to_etx.sh /path/to/task_script.sh
 ```
 

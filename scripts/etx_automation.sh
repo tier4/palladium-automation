@@ -225,8 +225,8 @@ test_connection() {
     fi
 }
 
-# heredoc方式でスクリプトを転送する共通関数
-transfer_script_heredoc() {
+# 行単位でスクリプトを転送する関数（安定版：0.2秒sleep + 10行ごとに休憩）
+transfer_script_line_by_line() {
     local local_script="$1"
     local remote_script="$2"
 
@@ -235,8 +235,9 @@ transfer_script_heredoc() {
         return 1
     fi
 
-    local line_count=$(wc -l < "$local_script")
-    log_debug "Transferring $local_script to $remote_script ($line_count lines)"
+    local line_count=0
+    local total_lines=$(wc -l < "$local_script")
+    log_info "Transferring $local_script ($total_lines lines)..."
 
     # ディレクトリ作成
     local remote_dir=$(dirname "$remote_script")
@@ -247,35 +248,38 @@ transfer_script_heredoc() {
         sleep 0.5
     fi
 
-    # heredoc方式で一度に転送
-    log_debug "Starting heredoc transfer..."
-    xdotool type --delay 10 --clearmodifiers "cat > ${remote_script} << 'EOF_SCRIPT_CONTENT'"
+    # 既存ファイルを削除
+    log_debug "Removing existing file if present..."
+    xdotool type --delay 10 --clearmodifiers "rm -f ${remote_script}"
     xdotool key Return
     sleep 0.5
 
-    # スクリプトの内容をクリップボード経由で転送
-    log_debug "Copying script content to clipboard..."
-    xclip -selection clipboard < "$local_script"
-    sleep 0.3
+    # 行単位で転送
+    log_info "Starting line-by-line transfer..."
+    while IFS= read -r line; do
+        # シングルクォートをエスケープ
+        escaped_line="${line//\'/\'\\\'\'}"
+        xdotool type --delay 5 --clearmodifiers "echo '${escaped_line}' >> ${remote_script}"
+        xdotool key Return
+        sleep 0.2  # DCVハング防止のため0.2秒待機
 
-    # クリップボードから貼り付け（Ctrl+Shift+V: ターミナルでの貼り付け）
-    log_debug "Pasting from clipboard..."
-    xdotool key --clearmodifiers ctrl+shift+v
-    sleep 1
+        line_count=$((line_count + 1))
 
-    # heredocの終了
-    xdotool key Return
-    xdotool type --delay 10 --clearmodifiers "EOF_SCRIPT_CONTENT"
-    xdotool key Return
-    sleep 1
+        # 10行ごとに進捗表示と休憩
+        if [ $((line_count % 10)) -eq 0 ]; then
+            log_info "Transfer progress: $line_count/$total_lines lines"
+            sleep 1  # ターミナル負荷軽減のため1秒休憩
+        fi
+    done < "$local_script"
 
     # 転送完了を確認
-    log_debug "Verifying transfer..."
+    log_info "Verifying transfer completion..."
+    sleep 2
     xdotool type --delay 10 --clearmodifiers "if [ -f ${remote_script} ]; then echo '[VERIFIED] Transfer complete'; wc -l ${remote_script}; else echo '[FAILED] Transfer failed'; fi"
     xdotool key Return
     sleep 2
 
-    log_debug "Transfer complete: $remote_script"
+    log_info "Transfer complete: $remote_script ($line_count lines transferred)"
 }
 
 # タスクスクリプトとラッパースクリプトを転送して実行
@@ -293,13 +297,13 @@ transfer_and_execute_with_github() {
     activate_etx_window || return 1
     sleep 0.5
 
-    # 1. タスクスクリプト転送（heredoc方式）
-    log_info "Transferring task script (heredoc method)..."
-    transfer_script_heredoc "$task_script" "$remote_task" || return 1
+    # 1. タスクスクリプト転送（行単位方式）
+    log_info "Transferring task script (line-by-line method)..."
+    transfer_script_line_by_line "$task_script" "$remote_task" || return 1
 
-    # 2. ラッパースクリプト転送（heredoc方式）
-    log_info "Transferring wrapper script (heredoc method)..."
-    transfer_script_heredoc "$wrapper_script" "$remote_wrapper" || return 1
+    # 2. ラッパースクリプト転送（行単位方式）
+    log_info "Transferring wrapper script (line-by-line method)..."
+    transfer_script_line_by_line "$wrapper_script" "$remote_wrapper" || return 1
 
     # 3. 実行権限付与
     log_info "Setting execute permissions..."
