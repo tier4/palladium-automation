@@ -150,16 +150,16 @@ else
     cd etx_results
 fi
 
-# タスクIDディレクトリを作成
-mkdir -p "results/${TASK_ID}"
+# タスクIDディレクトリを作成（モノレポ構造対応）
+mkdir -p "workspace/etx_results/results/${TASK_ID}"
 
 # 結果ファイルをコピー
-if ! cp "${RESULT_PATH}" "results/${TASK_ID}/"; then
+if ! cp "${RESULT_PATH}" "workspace/etx_results/results/${TASK_ID}/"; then
     echo "ERROR: Failed to copy result file" | tee -a "${RESULT_PATH}"
     exit 1
 fi
 
-git add "results/${TASK_ID}/${RESULT_FILE}"
+git add "workspace/etx_results/results/${TASK_ID}/${RESULT_FILE}"
 git commit -m "Task Result: ${TASK_ID}" >> "${RESULT_PATH}" 2>&1 || {
     echo "WARNING: git commit failed (possibly nothing to commit)" | tee -a "${RESULT_PATH}"
 }
@@ -172,7 +172,7 @@ PUSH_SUCCESS=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if git push origin main >> "${RESULT_PATH}" 2>&1; then
-        echo "SUCCESS: Result uploaded to GitHub: results/${TASK_ID}/${RESULT_FILE}" | tee -a "${RESULT_PATH}"
+        echo "SUCCESS: Result uploaded to GitHub: workspace/etx_results/results/${TASK_ID}/${RESULT_FILE}" | tee -a "${RESULT_PATH}"
         PUSH_SUCCESS=1
         break
     else
@@ -228,20 +228,15 @@ EOF_WRAPPER
     local max_wait=${GITHUB_POLL_TIMEOUT:-1800}  # デフォルト30分（長期実行対応）
     local poll_interval=${GITHUB_POLL_INTERVAL:-10}
     local waited=0
-    local result_subdir="results/${task_id}"
+    local result_subdir="workspace/etx_results/results/${task_id}"
 
-    # GitHubリポジトリのセットアップ
-    cd "$RESULTS_DIR"
+    # GitHubリポジトリのセットアップ（モノレポ全体）
+    local repo_root="$PROJECT_ROOT"
+    cd "$repo_root"
     if [ ! -d ".git" ]; then
-        log_info "Cloning GitHub repository for the first time..."
-        if ! git clone "https://github.com/${GITHUB_REPO}.git" . >/dev/null 2>&1; then
-            log_error "Failed to clone GitHub repository"
-            log_info "Troubleshooting:"
-            log_info "  1. Check repository exists: https://github.com/${GITHUB_REPO}"
-            log_info "  2. Check GitHub authentication (git clone test)"
-            log_info "  3. Check network connectivity"
-            return 1
-        fi
+        log_error "Not a git repository: $repo_root"
+        log_info "This script expects to run from within the palladium-automation repository"
+        return 1
     fi
 
     # ポーリングループ
@@ -264,7 +259,7 @@ EOF_WRAPPER
 
             # ローカルに永続保存（オプション）
             if [ "${SAVE_RESULTS_LOCALLY:-1}" = "1" ]; then
-                local archive_dir="$RESULTS_DIR/.archive/$(date +%Y%m)"
+                local archive_dir="$PROJECT_ROOT/workspace/etx_results/.archive/$(date +%Y%m)"
                 mkdir -p "$archive_dir"
                 cp "${result_subdir}/${result_file}" "$archive_dir/${task_id}_${result_file}"
                 log_info "Result archived locally: $archive_dir/${task_id}_${result_file}"
@@ -310,7 +305,7 @@ EOF_WRAPPER
     log_info "The task may still be running on ETX, or GitHub push failed"
     log_info "Troubleshooting:"
     log_info "  1. Check ETX Xterm window (script may still be running)"
-    log_info "  2. Check GitHub: https://github.com/${GITHUB_REPO}/tree/main/results/${task_id}"
+    log_info "  2. Check GitHub: https://github.com/${GITHUB_REPO}/tree/main/workspace/etx_results/results/${task_id}"
     log_info "  3. Check local result file on ETX: \$HOME/.etx_tmp/${result_file}"
     log_info "  4. Check ETX GitHub authentication: ssh to ETX and run 'git config --list'"
     return 1
@@ -347,7 +342,7 @@ Example:
   GITHUB_POLL_TIMEOUT=28800 $0 .claude/etx_tasks/long_build.sh
 
 Results:
-  - GitHub: https://github.com/tier4/palladium-automation/tree/main/results/
+  - GitHub: https://github.com/tier4/palladium-automation/tree/main/workspace/etx_results/results/
   - Local archive: workspace/etx_results/.archive/YYYYMM/
 
 EOF
