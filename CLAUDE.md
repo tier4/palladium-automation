@@ -129,39 +129,57 @@ ETX Xtermの画面をPNG形式でキャプチャします。
 
 ### 3. SSH統合スクリプト (`scripts/claude_to_ga53pd01.sh`) **推奨**
 
-SSH経由でga53pd01コンピュートサーバーにスクリプトを転送・実行し、GitHub経由で結果を自動回収する統合スクリプトです。
+SSH経由でga53pd01コンピュートサーバーにスクリプトを転送・実行し、結果を取得する統合スクリプトです。
 
-**特徴**:
+**2つの実行モード**:
+
+#### モード1: SSH同期実行（デフォルト・推奨）
 - ✅ SSH heredoc方式による高速・安定したスクリプト転送
+- ✅ リアルタイムで実行結果を表示
+- ✅ 即座に結果取得（2-3秒）
 - ✅ GUI操作不要（xdotoolの問題を解消）
-- ✅ GitHub経由の結果自動回収
-- ✅ タスクIDディレクトリ方式（複数人並行実行対応）
-- ✅ 実行後のリモートスクリプト自動削除
 - ✅ ローカルアーカイブ（`.archive/YYYYMM/`）
+- ⚠️ SSH接続維持が必要（短〜中時間タスク向け）
+
+#### モード2: GitHub非同期実行（長時間タスク用）
+- ✅ GitHub経由の結果自動回収
+- ✅ SSH切断後も実行継続
+- ✅ タスクIDディレクトリ方式（複数人並行実行対応）
 - ✅ 長期実行タスク対応（可変タイムアウト）
+- ⏱️ 結果取得に時間がかかる（10-30秒）
 
 **使用例**:
 ```bash
-# 基本的な使用方法
+# 基本的な使用方法（SSH同期実行）
 ./scripts/claude_to_ga53pd01.sh /path/to/task_script.sh
 
-# 長時間タスク（8時間タイムアウト）
-GITHUB_POLL_TIMEOUT=28800 ./scripts/claude_to_ga53pd01.sh /path/to/long_task.sh
+# GitHub非同期実行モード（長時間タスク用）
+USE_GITHUB=1 ./scripts/claude_to_ga53pd01.sh /path/to/long_task.sh
+
+# GitHub非同期 + 長時間タイムアウト（8時間）
+USE_GITHUB=1 GITHUB_POLL_TIMEOUT=28800 ./scripts/claude_to_ga53pd01.sh /path/to/very_long_task.sh
 
 # 結果の保存先
-# - GitHub: https://github.com/tier4/palladium-automation/tree/main/results/<task_id>/
-# - ローカルアーカイブ: workspace/etx_results/.archive/YYYYMM/
+# - SSH同期: ローカルアーカイブのみ: workspace/etx_results/.archive/YYYYMM/
+# - GitHub非同期: GitHub一時保存 + ローカルアーカイブ
 ```
 
 **環境変数**:
+- `USE_GITHUB`: GitHub非同期モード有効化、デフォルト: 0（SSH同期）
 - `REMOTE_HOST`: リモートホスト名、デフォルト: ga53pd01
 - `REMOTE_USER`: SSHユーザー名、デフォルト: henmi
 - `PROJECT_NAME`: プロジェクト名、デフォルト: tierivemu
-- `GITHUB_POLL_TIMEOUT`: タイムアウト（秒）、デフォルト: 1800（30分）
-- `GITHUB_POLL_INTERVAL`: ポーリング間隔（秒）、デフォルト: 10
+- `GITHUB_POLL_TIMEOUT`: タイムアウト（秒）、デフォルト: 1800（30分）※GitHub非同期時のみ
+- `GITHUB_POLL_INTERVAL`: ポーリング間隔（秒）、デフォルト: 10※GitHub非同期時のみ
 - `SAVE_RESULTS_LOCALLY`: ローカル保存、デフォルト: 1
 
-**動作フロー**:
+**動作フロー（SSH同期実行）**:
+1. タスクスクリプトをSSH stdin経由でga53pd01に転送
+2. ga53pd01で同期実行（リアルタイム出力）
+3. 実行完了後、結果をローカルアーカイブに保存
+4. リモートに一時ファイルは残らない
+
+**動作フロー（GitHub非同期実行）**:
 1. タスクスクリプトとラッパースクリプトを生成
 2. SSH heredocでga53pd01に転送
 3. ga53pd01でバックグラウンド実行
@@ -171,7 +189,9 @@ GITHUB_POLL_TIMEOUT=28800 ./scripts/claude_to_ga53pd01.sh /path/to/long_task.sh
 7. ローカルアーカイブに保存
 8. GitHubから自動削除
 
-**リモートスクリプト保存先**: `/proj/tierivemu/work/henmi/etx_tmp/`
+**リモートスクリプト保存先**: `/proj/tierivemu/work/henmi/etx_tmp/`（GitHub非同期時のみ）
+
+**詳細**: テスト結果と比較は [docs/ssh_direct_retrieval_test.md](docs/ssh_direct_retrieval_test.md) を参照
 
 ### 4. GUI統合スクリプト (`scripts/claude_to_etx.sh`) **レガシー**
 
