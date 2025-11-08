@@ -40,7 +40,7 @@ palladium-automation/     # このプロジェクト（ラッパー）
 
 2. **絶対パス使用の徹底**
    - 設定ファイルでは相対パスではなく絶対パスを使用
-   - プロジェクトルート: `/home/khenmi/palladium-automation`
+   - プロジェクトルート: `/home/khenmi/palladium-automation` (例)
    - 環境変数で動的に取得する場合は明示的にドキュメント化
 
 3. **チーム共有可能性**
@@ -404,6 +404,101 @@ Serenaは以下のメモリファイルを自動的に管理します：
 - `task_completion_checklist.md`: タスク完了チェックリスト
 
 これらはClaude Codeが自動的に参照します。
+
+### Serenaメモリの追加情報
+
+プロジェクト固有の情報（IXCOM使用方法、Palladium設定等）は、Serenaメモリに保存されています：
+
+- `ixcom_usage_guide.md`: IXCOMコンパイラの使用方法とオプション
+
+新しいメモリの追加：
+```bash
+# Serena MCPのwrite_memoryツールを使用
+mcp__serena__write_memory --memory_name <name> --content <content>
+```
+
+## Palladium/IXCOMドキュメントアクセス
+
+### Playwright MCPによるオンラインドキュメント参照
+
+Cadence公式ドキュメントは**Playwright MCP**を使用してアクセスできます。
+
+**アクセス手順**:
+
+1. **Cadence Support Portalにログイン**:
+   ```
+   URL: https://support.cadence.com/apex/HomePage
+   ログイン情報: ユーザーが入力（Kentoshi Henmi）
+   ```
+
+2. **ドキュメント検索**:
+   - Playwright MCPでページナビゲーション・検索を実行
+   - 例: "Palladium Z3"で検索 → 210件以上の結果
+
+3. **主要ドキュメント**:
+   - **IXCOM ReadMe** (IXCOM 25.08): 既知の問題、新機能
+   - **Palladium Z3/Z2 Planning and Installation Guide**: システム概要、環境要件
+   - **Compiling Designs with IXCOM**: コンパイル詳細
+   - **Behavioral Compilation with IXCOM**: SIXC_CTRL directive使用法
+
+**Playwright MCP使用例**:
+```
+ユーザー: 「IXCOMのループブレーカー機能について調べて」
+
+Claude Code:
+1. mcp__playwright__browser_navigate でCadence Support Portalにアクセス
+2. mcp__playwright__browser_type で"IXCOM loop breaker"を検索
+3. mcp__playwright__browser_click で該当ドキュメントを開く
+4. mcp__playwright__browser_take_screenshot でスクリーンショット取得
+5. 関連情報を抽出してユーザーに報告
+```
+
+### ローカルドキュメント参照（ga53pd01）
+
+ga53pd01上では**Cadence Doc Assistant (CDA)**を使用してローカルドキュメントにアクセスできます。
+
+**CDA情報**:
+- バージョン: Doc Assistant v02.20
+- パス: `/apps/IXCOM2405/24.05.338.s005/bin/cda`
+- 旧ツール: `cdnshelp` (24.05以降非推奨)
+
+**起動方法**:
+```bash
+# デフォルト起動（オンラインモード：クラウドから最新ドキュメント取得）
+cda &
+
+# 製品マニュアル表示
+cda -tool &
+
+# オフラインモード（ローカルインストールからドキュメント）
+cda -hierarchy /apps/IXCOM2405/24.05.338.s005/doc &
+
+# 検索
+cda -search "loop breaker" &
+```
+
+### IXCOMコマンドラインヘルプ
+
+ga53pd01でIXCOMのヘルプを直接確認できます：
+
+```bash
+# 基本ヘルプ
+ixcom -help
+
+# コンパイルオプション
+ixcom -help compile
+
+# エラボレーションオプション
+ixcom -help elaborate
+
+# バージョン確認
+ixcom -version
+```
+
+**IXCOM基本情報**:
+- バージョン: V24.05.338.s005
+- パス: `/apps/IXCOM2405/24.05.338.s005/bin/ixcom`
+- 詳細: `.serena/memories/ixcom_usage_guide.md` 参照
 
 ## 注意事項
 
