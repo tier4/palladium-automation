@@ -1,4 +1,4 @@
-# Palladium Automation
+# Palladium Automation（β版）
 
 **Hornet GPU/GPGPU開発のラッパープロジェクト**。SSH経由のga53pd01 Palladiumエミュレータ制御と、Serena MCPによるVerilog/SystemVerilog解析を統合し、RTL開発からシミュレーション実行までをワンストップで実現します。
 
