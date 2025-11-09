@@ -136,9 +136,13 @@ BASTION_HOST=10.108.64.1
 git clone https://github.com/tier4/hornet.git
 ```
 
-### 5. Serena MCP設定（オプション）
+### 5. MCP設定（オプション）
 
-Verilog/SystemVerilog解析を使用する場合：
+このプロジェクトでは以下のMCPサーバーを利用できます。各自の環境で必要に応じてインストールしてください。
+
+#### Serena MCP - Verilog/SystemVerilog解析
+
+RTL解析機能が必要な場合：
 
 ```bash
 # Serena MCPを追加
@@ -146,7 +150,20 @@ claude-serena
 # または手動で ~/.claude.json に設定
 ```
 
+**機能**: hornetプロジェクトのVerilog/SystemVerilogコードのシンボルベース解析
+
 詳細は [docs/mcp_setup_cli.md](docs/mcp_setup_cli.md) を参照してください。
+
+#### Playwright MCP - ブラウザ自動化
+
+Cadence Supportサイトのドキュメント参照が必要な場合：
+
+```bash
+# Claude Desktopで自動的に利用可能
+# 追加のインストール・設定は不要
+```
+
+**機能**: Palladium/IXCOMドキュメントの検索・閲覧の自動化
 
 ### 6. 接続テスト
 

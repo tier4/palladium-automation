@@ -1,6 +1,14 @@
-# セットアップガイド
+# palladium-automation セットアップガイド
 
-このガイドでは、Palladium自動化プロジェクトのセットアップ手順を説明します。
+このガイドでは、**palladium-automationプロジェクトをgit cloneしてから、Claude Codeで使用できるようにするまでの手順**を説明します。
+
+## セットアップ完了後にClaude Codeでできること
+
+- ✅ **ga53pd01でスクリプトを自動実行** - Palladium環境でのビルド・シミュレーションを自然言語で指示
+- ✅ **RTLコードの解析と編集** - Verilog/SystemVerilogコードをシンボルベースで理解・修正（Serena MCP）
+- ✅ **ドキュメントの自動検索・参照** - Palladium/IXCOMのマニュアルをブラウザ自動化で取得（Playwright MCP）
+- ✅ **実行結果の自動分析** - ログファイルのエラー解析・レポート生成
+- ✅ **ワークフロー全体の自動化** - 「ビルドして、テストして、結果を分析して」を一度の指示で実行
 
 ## 重要: プロジェクト内完結の原則
 
@@ -13,84 +21,68 @@
 
 ## 目次
 
-1. [前提条件](#前提条件)
-2. [SSH公開鍵認証の設定](#ssh公開鍵認証の設定)
-3. [プロジェクトのセットアップ](#プロジェクトのセットアップ)
-4. [動作確認](#動作確認)
-5. [トラブルシューティング](#トラブルシューティング)
+1. [ga53pd01へのパスワードレスSSH接続設定](#ga53pd01へのパスワードレスssh接続設定)
+2. [プロジェクトのセットアップ](#プロジェクトのセットアップ)
+3. [動作確認](#動作確認)
+4. [トラブルシューティング](#トラブルシューティング)
 
 ---
 
-## 前提条件
+## ga53pd01へのパスワードレスSSH接続設定
 
-### ローカル環境（RHEL8）
+**目的**: パスワード入力なしで `ssh ga53pd01` コマンドでダイレクトにga53pd01にアクセスできるようにします。
 
-必須ツール:
-- SSH (OpenSSH 7.3以降)
-- Git
-- Bash
+これにより、Claude Codeが自動的にスクリプトを実行する際に、認証で止まることなくシームレスに動作します。
 
-オプション:
-- X11 Forwarding (GUIツール表示用)
-- gnome-screenshot (画面キャプチャ用)
-
-### リモート環境（ga53pd01）
-
-- RHEL8
-- Palladium Compute Server
-- SSHアクセス可能
-- バスティオンサーバー（10.108.64.1）経由でアクセス
-
----
-
-## SSH公開鍵認証の設定
+**ユーザー名について**:
+- 以下の手順では `your_palladium_username` と記載しています
+- これは**Palladium環境のユーザー名**です（ローカルのユーザー名とは異なる場合があります）
+- 例: ローカルが `khenmi`、Palladiumが `henmi` の場合、`henmi` を使用します
 
 ### 1. SSH鍵の生成
 
-既にSSH鍵を持っている場合はスキップできます。
+既にSSH公開鍵認証用の鍵ペア（`~/.ssh/id_ed25519` または `~/.ssh/id_rsa`）を持っている場合はスキップできます。
 
 ```bash
 # SSH鍵の存在確認
 ls -la ~/.ssh/id_*.pub
+# 出力例: id_ed25519.pub または id_rsa.pub が表示されればOK
 
-# 鍵がない場合は生成
-ssh-keygen -t ed25519 -C "your_email@tier4.jp"
+# 鍵がない場合は生成（パスフレーズなしで簡単セットアップ）
+ssh-keygen -t ed25519 -C "your_email@tier4.jp" -N ""
 
-# パスフレーズの入力（推奨）
-# Enter passphrase (empty for no passphrase): [パスフレーズを入力]
-# Enter same passphrase again: [もう一度入力]
+# 実行すると以下のように表示されます:
+# Generating public/private ed25519 key pair.
+# Your identification has been saved in /home/username/.ssh/id_ed25519
+# Your public key has been saved in /home/username/.ssh/id_ed25519.pub
 ```
 
-**推奨設定**:
-- 鍵タイプ: `ed25519` （高速・安全）
-- 保存場所: デフォルト（`~/.ssh/id_ed25519`）
-- パスフレーズ: 設定推奨（セキュリティ向上）
-
-### 2. バスティオンサーバーへの公開鍵登録
+### 2. バスティオンサーバー（ga53ut01 / 10.108.64.1）への公開鍵登録
 
 ```bash
-# バスティオンサーバーに公開鍵をコピー
-ssh-copy-id henmi@10.108.64.1
+# バスティオンサーバー（ga53ut01）に公開鍵をコピー
+# 注: your_palladium_username を自分のPalladiumユーザー名に置き換えてください
+ssh-copy-id your_palladium_username@10.108.64.1
 
 # パスワードを入力
-# henmi@10.108.64.1's password: [パスワード入力]
+# your_palladium_username@10.108.64.1's password: [パスワード入力]
 
 # 接続確認
-ssh henmi@10.108.64.1 'hostname'
-# 出力: [バスティオンサーバーのホスト名]
+ssh your_palladium_username@10.108.64.1 'hostname'
+# 出力: ga53ut01
 ```
 
 ### 3. ga53pd01への公開鍵登録
 
 ```bash
-# バスティオンサーバー経由でga53pd01にログイン
-ssh henmi@10.108.64.1
+# バスティオンサーバー（ga53ut01）経由でga53pd01にログイン
+ssh your_palladium_username@10.108.64.1
 
 # ga53pd01に公開鍵をコピー
-ssh-copy-id henmi@ga53pd01
+ssh-copy-id your_palladium_username@ga53pd01
 
 # パスワードを入力
-# henmi@ga53pd01's password: [パスワード入力]
+# your_palladium_username@ga53pd01's password: [パスワード入力]
 
 # ログアウト
 exit
@@ -98,42 +90,37 @@ exit
 
 ### 4. SSH ProxyJump設定
 
-ProxyJump機能を使うと、バスティオンサーバー経由のアクセスが透過的になります。
+ProxyJump機能を使うと、バスティオンサーバー（ga53ut01）経由のアクセスが透過的になります。
 
 `~/.ssh/config` ファイルを編集:
 
 ```bash
-nano ~/.ssh/config
+vi ~/.ssh/config
 ```
 
 以下の設定を追加:
 
 ```ssh-config
-# Palladium Bastion Server
+# Palladium Bastion Server (ga53ut01)
 Host palladium_bastion
   HostName 10.108.64.1
-  User henmi
+  User your_palladium_username    # 自分のPalladiumユーザー名に変更
   IdentityFile ~/.ssh/id_ed25519
   ForwardX11 yes
 
-# Palladium ga53pd01 via Bastion
+# Palladium ga53pd01 via Bastion (ga53ut01)
 Host ga53pd01
   HostName ga53pd01
-  User henmi
+  User your_palladium_username    # 自分のPalladiumユーザー名に変更
   IdentityFile ~/.ssh/id_ed25519
   ProxyJump palladium_bastion
   ForwardX11 yes
 ```
 
-**設定のカスタマイズ**:
-- `User`: 自分のユーザー名に変更
-- `IdentityFile`: 異なるSSH鍵を使用する場合は変更
-- `ForwardX11`: X11フォワーディングが不要な場合は削除
-
-### 5. SSH接続の確認
+### 5. t4_head から ga53pd01 パスワード無しSSH接続の確認
 
 ```bash
-# ga53pd01への直接接続テスト（パスワード不要で接続できるはず）
+# gt4_head から a53pd01への直接接続テスト（パスワード不要で接続できるはず）
 ssh ga53pd01 'hostname'
 # 出力: ga53pd01
 
@@ -168,15 +155,56 @@ ssh ga53pd01 'cat ~/.ssh/authorized_keys'
 
 ## プロジェクトのセットアップ
 
-### 1. プロジェクトのクローン
+### 1. palladium-automation のクローン
 
 ```bash
-cd ~
+cd ~   # 適切なディレクトリに移動
 git clone https://github.com/tier4/palladium-automation.git
 cd palladium-automation
 ```
 
-### 2. ディレクトリ構造の確認
+### 2. 環境変数の設定
+
+```bash
+# .env.exampleをコピーして自分の環境に合わせて編集
+cp .env.example .env
+vi .env
+```
+
+**設定内容** (`.env` ファイル):
+```bash
+REMOTE_USER=your_palladium_username     # 自分のPalladiumユーザー名
+```
+
+**注意**: 他の設定項目（`REMOTE_HOST`、`PROJECT_NAME`、`BASTION_HOST`等）はデフォルト値で動作するため、通常は変更不要です。
+
+### 3. Palladium対象プロジェクト（Hornet RTL）のクローン
+
+```bash
+# palladium-automation内にhornetをクローン（デフォルトブランチ: main）
+git clone https://github.com/tier4/hornet.git
+
+# または特定のブランチを指定してクローン
+git clone -b <branch_name> https://github.com/tier4/hornet.git
+
+# 確認
+ls -la hornet/
+# hornet/src/, hornet/eda/, hornet/tb/ などが表示されればOK
+```
+
+**重要な注意事項**:
+- `hornet/`ディレクトリは`.gitignore`に含まれており、palladium-automationのGit管理対象外です
+- **ローカルとga53pd01のhornetは同じブランチを使用してください**（後述の「次のステップ」でga53pd01にもクローンします）
+
+
+### 4. アーカイブディレクトリの作成
+
+```bash
+# 結果保存用ディレクトリの作成
+mkdir -p workspace/etx_results/.archive
+```
+
+### 5. ディレクトリ構造の確認
 
 ```bash
 ls -la
@@ -192,65 +220,88 @@ palladium-automation/
 │   └── etx_results/
 │       └── .archive/            # ローカル結果アーカイブ
 ├── hornet/                      # Hornet RTLプロジェクト（git clone）
+├── .env                         # 環境設定ファイル（要作成）
+├── .env.example                 # 環境設定テンプレート
 ├── docs/
 ├── CLAUDE.md
 └── README.md
 ```
 
-### 3. スクリプトの実行権限確認
+### 6. スクリプトの実行権限確認
 
 ```bash
 chmod +x scripts/claude_to_ga53pd01.sh
 ```
 
-### 4. アーカイブディレクトリの作成
+### 7. MCP設定
+
+**注意**: MCPサーバーは各自の環境でインストールが必要です。
+
+#### Serena MCP - Verilog/SystemVerilog解析
+
+RTL解析機能が使えるようになります。
+
+**前提条件**: `~/.bashrc` に以下の設定が必要です：
 
 ```bash
-# 結果保存用ディレクトリの作成
-mkdir -p workspace/etx_results/.archive
+# Verible（Verilog言語サーバー）のロード
+module load verible >/dev/null 2>&1
+
+# claude-serenaエイリアスの設定
+alias claude-serena='claude mcp add serena -- /opt/eda/uv/current/bin/uv run --directory /opt/eda/serena-verilog/current/ serena start-mcp-server --context ide-assistant --project $(pwd) --enable-web-dashboard false'
 ```
+
+**インストール手順**:
+
+```bash
+# 1. 上記の設定を ~/.bashrc に追加（まだの場合）
+vi ~/.bashrc
+
+# 2. .bashrcを再読み込み
+source ~/.bashrc
+
+# 3. Serena MCPをインストール
+claude-serena
+```
+
+**提供機能**:
+- hornetプロジェクトのVerilog/SystemVerilogコード解析
+- シンボルベース検索（モジュール、関数等）
+- RTLコードの構造解析
+
+#### Playwright MCP - ブラウザ自動化
+
+Cadence Supportサイトのドキュメント参照ができるようにします。
+
+**インストール手順**:
+
+```bash
+# Playwright MCPをインストール
+claude mcp add playwright npx @playwright/mcp@latest
+```
+
+**提供機能**:
+- Cadence Support Portalへのアクセス
+- Palladium/IXCOMなどのドキュメントの検索・閲覧自動化
+- スクリーンショット取得
 
 ---
 
 ## 動作確認
 
-### 1. SSH接続テスト
+### スクリプト実行テスト
+
+リポジトリに用意されているテストスクリプトを実行します：
 
 ```bash
-# シンプルな接続テスト
-ssh ga53pd01 'echo "Connection successful: $(hostname)"'
-# 出力: Connection successful: ga53pd01
-```
-
-### 2. スクリプト実行テスト
-
-#### 簡単なテストスクリプトを作成
-
-```bash
-cat > /tmp/test_task.sh << 'EOF'
-#!/bin/bash
-echo "=== Test Task Started ==="
-echo "Date: $(date)"
-echo "User: $(whoami)"
-echo "Hostname: $(hostname)"
-echo ""
-echo "Working directory: $(pwd)"
-echo "Test calculation: 10 + 20 = $((10 + 20))"
-echo ""
-echo "=== Test Task Complete ==="
-EOF
-```
-
-#### SSH統合スクリプトで実行
-
-```bash
-./scripts/claude_to_ga53pd01.sh /tmp/test_task.sh
+# テストスクリプトを実行
+./scripts/claude_to_ga53pd01.sh scripts/test_connection.sh
 ```
 
 **期待される動作**:
 1. スクリプトがga53pd01で実行される
 2. 実行中の出力がリアルタイムで表示される
-3. 結果が `workspace/etx_results/.archive/YYYYMM/` に保存される
+3. また、結果は `workspace/etx_results/.archive/YYYYMM/` にも保存される
 
 **実行例**:
 ```
@@ -276,23 +327,18 @@ Test calculation: 10 + 20 = 30
 [INFO] Output: 10 lines, 4.0K
 ```
 
-### 3. 結果ファイルの確認
+### 結果ファイルの確認
+
+実行完了時の`[INFO]`メッセージに表示されたファイルパスを確認します：
 
 ```bash
 # アーカイブディレクトリの確認
 ls -lh workspace/etx_results/.archive/$(date +%Y%m)/
 
-# 最新の結果を表示
-ls -t workspace/etx_results/.archive/$(date +%Y%m)/ | head -1 | xargs -I {} cat "workspace/etx_results/.archive/$(date +%Y%m)/{}"
+# INFOメッセージに表示されたファイルパスを直接指定して確認
+# 例: workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection_result.txt
+cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection_result.txt
 ```
-
----
-
-## オプション: レガシーGUI自動操作ツール
-
-SSH方式が標準実装です。GUI自動操作ツール（xdotoolベース）は `scripts/.legacy/` に移動されました。
-
-詳細は [scripts/.legacy/README.md](../scripts/.legacy/README.md) を参照してください。
 
 ---
 
@@ -377,91 +423,94 @@ SSH方式が標準実装です。GUI自動操作ツール（xdotoolベース）�
    ssh -J henmi@10.108.64.1 henmi@ga53pd01 'hostname'
    ```
 
-### スクリプト実行エラー: Permission denied
-
-**症状**: `bash: ./scripts/claude_to_ga53pd01.sh: Permission denied`
-
-**解決方法**:
-```bash
-# 実行権限を追加
-chmod +x scripts/claude_to_ga53pd01.sh
-
-# すべてのスクリプトに一括で追加
-chmod +x scripts/*.sh
-```
-
-### 結果ファイルが見つからない
-
-**原因**: アーカイブディレクトリが存在しない、または日付が異なる
-
-**解決方法**:
-```bash
-# アーカイブディレクトリの作成
-mkdir -p workspace/etx_results/.archive
-
-# すべてのアーカイブを確認
-find workspace/etx_results/.archive -type f -name "*.txt" | sort -r | head -5
-
-# 最新の結果を表示
-find workspace/etx_results/.archive -type f -name "*.txt" -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2- | xargs cat
-```
-
-### スクリプト実行が遅い
-
-**原因**: SSH接続の確立に時間がかかっている
-
-**解決方法**:
-
-1. **SSH ControlMasterを有効化（接続再利用）**:
-
-   `~/.ssh/config` に追加:
-   ```ssh-config
-   Host *
-     ControlMaster auto
-     ControlPath ~/.ssh/cm-%r@%h:%p
-     ControlPersist 10m
-   ```
-
-2. **DNS解決の高速化**:
-
-   `/etc/hosts` に追加（要root権限）:
-   ```
-   10.108.64.1 palladium_bastion
-   ```
-
-3. **接続確認**:
-   ```bash
-   # 初回接続（コントロールマスター確立）
-   time ssh ga53pd01 'echo test'
-   # 2回目以降は高速になる
-   time ssh ga53pd01 'echo test'
-   ```
-
 ---
 
 ## 次のステップ
 
 セットアップが完了したら:
 
-1. **実際のタスクを実行**:
-   ```bash
-   # 例: ビルドスクリプトを作成して実行
-   cat > /tmp/build_task.sh << 'EOF'
-   #!/bin/bash
-   cd /proj/tierivemu/work/henmi/gion
-   make clean
-   make all
-   EOF
+1. **ga53pd01にhornetプロジェクトをクローン**:
 
-   ./scripts/claude_to_ga53pd01.sh /tmp/build_task.sh
+   サンプルビルドスクリプトを実行するには、ga53pd01上にhornetをクローンする必要があります。
+
+   **既にクローン済みの場合はスキップ可能です。**
+
+   **手動でクローン**:
+   ```bash
+   # ga53pd01にログイン
+   ssh ga53pd01
+
+   # プロジェクトディレクトリに移動して、hornetをクローン
+   cd /proj/tierivemu/work/<your_palladium_username>
+
+   # デフォルトブランチ（main）をクローン
+   git clone https://github.com/tier4/hornet.git
+
+   # または特定のブランチを指定してクローン
+   # git clone -b <branch_name> https://github.com/tier4/hornet.git
+
+   exit
    ```
 
-2. **Claude Codeと統合**:
+   **Claude Codeで自動実行** (推奨):
+   ```
+   「ga53pd01の /proj/tierivemu/work/<your_palladium_username>/ に
+   https://github.com/tier4/hornet.git のmainブランチをgit cloneして」
+
+   # 特定のブランチをクローンする場合:
+   「ga53pd01の /proj/tierivemu/work/<your_palladium_username>/ に
+   https://github.com/tier4/hornet.git の<branch_name>ブランチをgit cloneして」
+   ```
+
+2. **実際のタスクを実行**:
+
+   サンプルビルドスクリプトをテンプレートとして使用できます：
+   ```bash
+   # サンプルスクリプトを確認・編集
+   cat scripts/example_build_task.sh
+   # 必要に応じてプロジェクトパスを編集
+   vi scripts/example_build_task.sh
+
+   # 実行
+   ./scripts/claude_to_ga53pd01.sh scripts/example_build_task.sh
+   ```
+
+3. **Hornet RTL開発ワークフロー**:
+
+   **ローカルhornetがメイン開発環境です。**
+
+   ```
+   [ローカル] hornet/ でRTL解析・編集 (Serena MCP使用)
+      ↓
+   [ローカル] hornet/ で git commit & push
+      ↓
+   [ga53pd01] hornet/ で git pull
+      ↓
+   [ga53pd01] Palladiumエミュレーション実行
+      ↓
+   [ローカル] 結果分析（ログ解析）
+   ```
+
+   **実行例**:
+   ```bash
+   # 1. ローカルでRTL編集（Claude Code + Serena MCP）
+   cd hornet
+   # Serena MCPでVerilogコードを解析・編集
+   git add src/modified_file.sv
+   git commit -m "fix: update ALU logic"
+   git push origin <branch_name>
+
+   # 2. ga53pd01で最新コードを取得してビルド
+   # Claude Codeに以下のように指示:
+   「ga53pd01の/proj/tierivemu/work/henmi/hornetでgit pullして、ビルドを実行して」
+   ```
+
+4. **Claude Codeと統合**:
    - Claude Codeでタスクを自動生成
    - `claude_to_ga53pd01.sh` で実行
    - 結果を確認・分析
 
-3. **独自のワークフローを構築**:
+5. **独自のワークフローを構築**:
    - テスト自動実行
    - ログ分析
    - レポート生成
@@ -474,9 +523,4 @@ find workspace/etx_results/.archive -type f -name "*.txt" -printf '%T@ %p\n' | s
 - [SSH直接取得テスト結果](ssh_direct_retrieval_test.md)
 - [CLAUDE.md](../CLAUDE.md) - Claude Code向けガイド
 
-## サポート
 
-問題が発生した場合:
-1. このガイドのトラブルシューティングセクションを確認
-2. プロジェクトのIssueを検索
-3. 新しいIssueを作成して詳細を報告

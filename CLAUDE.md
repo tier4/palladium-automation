@@ -27,6 +27,44 @@ palladium-automation/     # このプロジェクト（ラッパー）
 3. **結果分析**: 実行結果の自動回収・アーカイブ・解析
 4. **ワンストップ**: palladium-automation内で解析から実行まで完結
 
+## Hornet RTL開発ワークフロー
+
+**ローカルhornetがメイン開発環境です。**
+
+```
+[ローカル] hornet/ でRTL解析・編集 (Serena MCP使用)
+   ↓
+[ローカル] hornet/ で git commit & push
+   ↓
+[ga53pd01] hornet/ で git pull
+   ↓
+[ga53pd01] Palladiumエミュレーション実行
+   ↓
+[ローカル] 結果分析（ログ解析）
+```
+
+### 実行例
+
+```bash
+# 1. ローカルでRTL編集（Claude Code + Serena MCP）
+cd hornet
+# Serena MCPでVerilogコードを解析・編集
+git add src/modified_file.sv
+git commit -m "fix: update ALU logic"
+git push origin <branch_name>
+
+# 2. ga53pd01で最新コードを取得してビルド
+# Claude Codeに以下のように指示:
+「ga53pd01の/proj/tierivemu/work/henmi/hornetでgit pullして、ビルドを実行して」
+```
+
+### 重要な注意事項
+
+- **ローカルとga53pd01のhornetは同じブランチを使用してください**
+- ローカルhornetでSerena MCPを使ってRTL解析・編集を行う
+- 修正後は必ずgit push してからga53pd01でgit pull
+- ga53pd01はビルド・エミュレーション実行専用
+
 ## 環境設定
 
 ### .env ファイルによる環境カスタマイズ
