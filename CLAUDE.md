@@ -500,6 +500,156 @@ ixcom -version
 - パス: `/apps/IXCOM2405/24.05.338.s005/bin/ixcom`
 - 詳細: `.serena/memories/ixcom_usage_guide.md` 参照
 
+## GUIツール表示とキャプチャ
+
+ga53pd01上のGUIツール（CDA、波形ビューア等）は、X11転送経由でローカルGNOMEデスクトップに表示し、Claude Codeで確認できます。
+
+### 基本ワークフロー
+
+```
+ga53pd01 (SSH経由)
+  ↓ GUIツール起動
+  ↓ X11転送 (DISPLAY=10.108.64.21:16.0)
+  ↓
+ローカルGNOME (DISPLAY=:2)
+  ↓ gnome-screenshot
+  ↓
+Claude Code
+  ↓ Read tool
+  ✓ 画像確認
+```
+
+### 利用可能なGUIツール
+
+| ツール | 説明 | 起動コマンド |
+|--------|------|-------------|
+| CDA | Cadence Doc Assistant (ドキュメントビューア) | `cda -tool &` |
+| gedit | テキストエディタ（テスト用） | `gedit <file> &` |
+| xterm | ターミナル | `xterm &` |
+| Simvision | 波形ビューア（シミュレーション後） | `simvision &` |
+
+### Claude Code プロンプト例
+
+#### 例1: CDAを起動してキャプチャ
+
+```
+ユーザー: 「ga53pd01でCadence Doc Assistantを起動してキャプチャを取って」
+
+Claude Code:
+1. ga53pd01でCDA起動スクリプトを作成
+2. SSH経由でCDAを起動（バックグラウンド実行）
+3. X11転送でローカルに表示（自動）
+4. gnome-screenshotでキャプチャ
+5. Read toolで画像確認
+6. ユーザーに結果報告
+```
+
+#### 例2: IXCOMドキュメントをCDAで表示
+
+```
+ユーザー: 「CDAでIXCOMのループブレーカーに関するドキュメントを表示して」
+
+Claude Code:
+1. ga53pd01でCDA起動：cda -search "loop breaker" &
+2. X11転送でローカル表示
+3. gnome-screenshotでキャプチャ
+4. 画像を確認してユーザーに報告
+```
+
+#### 例3: 任意のGUIツールをキャプチャ
+
+```
+ユーザー: 「ga53pd01でgeditを起動して、サンプルテキストを表示してキャプチャして」
+
+Claude Code:
+1. サンプルテキストファイル作成
+2. gedit起動スクリプト作成・実行
+3. X11転送でローカル表示
+4. gnome-screenshotでキャプチャ
+5. Read toolで画像確認
+6. クリーンアップ（プロセス終了）
+```
+
+### 実装方法
+
+#### 1. ga53pd01でGUIツール起動
+
+スクリプト例：
+```bash
+#!/bin/bash
+# /tmp/launch_gui.sh
+
+echo "DISPLAY=${DISPLAY}"
+cda -tool &
+CDA_PID=$!
+echo "CDA launched with PID: $CDA_PID"
+sleep 5  # GUIの起動待ち
+echo "CDA window visible on local display"
+```
+
+実行：
+```bash
+./scripts/claude_to_ga53pd01.sh /tmp/launch_gui.sh
+```
+
+#### 2. ローカルでスクリーンショット取得
+
+```bash
+# タイムスタンプ付きでキャプチャ
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+gnome-screenshot -f /tmp/gui_capture_${TIMESTAMP}.png
+```
+
+#### 3. Claude Codeで確認
+
+```python
+# Read toolで画像読み込み
+Read("/tmp/gui_capture_20251109_091405.png")
+```
+
+#### 4. クリーンアップ
+
+```bash
+#!/bin/bash
+# /tmp/cleanup_gui.sh
+
+echo "Cleaning up GUI process..."
+kill <PID>
+```
+
+### 注意事項
+
+- **DISPLAY変数**: ga53pd01は`10.108.64.21:16.0`、ローカルは`:2`
+- **X11転送**: SSH設定で`ForwardX11 yes`が必要（既に設定済み）
+- **プロセス管理**: バックグラウンドプロセスは必ずクリーンアップ
+- **タイムアウト**: GUIツールの起動には5-10秒程度待つ
+- **スクリーンショットツール**: `gnome-screenshot`を使用（ローカル環境）
+
+### トラブルシューティング
+
+#### GUIが表示されない場合
+
+```bash
+# DISPLAY変数確認
+echo $DISPLAY
+
+# X11転送確認
+xdpyinfo 2>&1 | head -5
+
+# SSH X11転送確認（ローカル）
+ssh -X henmi@ga53pd01 "echo \$DISPLAY"
+```
+
+#### スクリーンショットが撮れない場合
+
+```bash
+# gnome-screenshotの確認
+which gnome-screenshot
+
+# 権限確認
+ls -la /tmp/gui_capture_*.png
+```
+
 ## 注意事項
 
 - リモート環境(ga53pd01/Palladium)は外部ネットワークアクセスが制限されているため、すべての依存関係は事前に準備が必要
