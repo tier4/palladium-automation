@@ -30,11 +30,9 @@
 - Git
 - Bash
 
-オプション（GUIベース方式を使う場合）:
-- xdotool
-- wmctrl
-- xclip
-- netpbm-progs
+オプション:
+- X11 Forwarding (GUIツール表示用)
+- gnome-screenshot (画面キャプチャ用)
 
 ### リモート環境（ga53pd01）
 
@@ -189,12 +187,11 @@ ls -la
 palladium-automation/
 ├── scripts/
 │   ├── claude_to_ga53pd01.sh    # SSH統合スクリプト（推奨）
-│   ├── claude_to_etx.sh         # GUI統合スクリプト（レガシー）
-│   ├── etx_automation.sh        # GUI自動操作スクリプト
-│   └── capture_etx_window.sh    # 画面キャプチャスクリプト
+│   └── .legacy/                 # レガシースクリプト（GUI自動操作）
 ├── workspace/
 │   └── etx_results/
 │       └── .archive/            # ローカル結果アーカイブ
+├── hornet/                      # Hornet RTLプロジェクト（git clone）
 ├── docs/
 ├── CLAUDE.md
 └── README.md
@@ -204,9 +201,6 @@ palladium-automation/
 
 ```bash
 chmod +x scripts/claude_to_ga53pd01.sh
-chmod +x scripts/claude_to_etx.sh
-chmod +x scripts/etx_automation.sh
-chmod +x scripts/capture_etx_window.sh
 ```
 
 ### 4. アーカイブディレクトリの作成
@@ -294,60 +288,11 @@ ls -t workspace/etx_results/.archive/$(date +%Y%m)/ | head -1 | xargs -I {} cat 
 
 ---
 
-## オプション: GUI自動操作ツール（レガシー）
+## オプション: レガシーGUI自動操作ツール
 
-SSH方式で十分な場合、このセクションはスキップできます。
+SSH方式が標準実装です。GUI自動操作ツール（xdotoolベース）は `scripts/.legacy/` に移動されました。
 
-<details>
-<summary>GUI方式のセットアップ（クリックで展開）</summary>
-
-### 必要なツールのインストール
-
-```bash
-# GUI自動操作ツール
-sudo dnf install -y xdotool wmctrl xclip
-
-# 画面キャプチャツール
-sudo dnf install -y netpbm-progs
-```
-
-### DISPLAY環境変数の設定
-
-```bash
-# DISPLAY環境変数の確認
-echo $DISPLAY
-
-# 設定されていない場合
-export DISPLAY=:2  # 環境に応じて調整
-
-# .bashrcに追加（永続化）
-echo 'export DISPLAY=:2' >> ~/.bashrc
-source ~/.bashrc
-
-# X11権限の設定
-xhost +SI:localuser:$(whoami)
-```
-
-### ETX Xtermの起動
-
-1. **ETX TurboX Dashboardにアクセス**
-2. **「Start Xterm」をクリック**
-3. **ローカルデスクトップにXtermウィンドウが表示される**
-
-### GUI方式の動作確認
-
-```bash
-# ウィンドウ一覧表示
-./scripts/etx_automation.sh list
-
-# ETX接続テスト
-./scripts/etx_automation.sh test
-
-# ETXウィンドウのアクティブ化
-./scripts/etx_automation.sh activate
-```
-
-</details>
+詳細は [scripts/.legacy/README.md](../scripts/.legacy/README.md) を参照してください。
 
 ---
 

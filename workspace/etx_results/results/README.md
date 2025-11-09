@@ -1,8 +1,19 @@
-# ETX Task Results
+# Task Results (Legacy)
 
-このディレクトリには、ETXで実行されたタスクの結果が一時的に保存されます。
+**注意**: このディレクトリは現在使用されていません。
 
-## 構造
+## 現在の結果保存先
+
+SSH同期実行方式では、結果は以下に直接保存されます：
+
+```
+workspace/etx_results/.archive/YYYYMM/
+└── <user>_<timestamp>_<task_name>_result.txt
+```
+
+## レガシー構造（参考）
+
+以前のGitHub非同期モード（未実装）では以下の構造を想定していました：
 
 ```
 results/
@@ -10,8 +21,7 @@ results/
     └── <task_name>_result.txt
 ```
 
-## クリーンアップ
+## 詳細
 
-- ローカルで結果を取得後、自動的に削除されます
-- GitHub Actions により3日後に自動削除されます
-- ローカルアーカイブ: `../.archive/YYYYMM/` に永続保存
+- SSH同期実行方式の詳細: `../../docs/ssh_direct_retrieval_test.md`
+- レガシー実装計画: `../../docs/.legacy/github_integration_plan.md`
