@@ -77,13 +77,13 @@ palladium-automation/     # このプロジェクト（ラッパー）
 
 ## アーキテクチャ
 
-### SSH同期実行方式（推奨・現在の標準）
+### SSH同期実行方式（現在の実装）
 
 ```
 [ローカル RHEL8 + GNOME]
     ↓ Claude Code動作
     ↓ タスクスクリプト生成
-    ↓ SSH heredoc転送（2-3秒）
+    ↓ SSH stdin経由で転送（2-3秒）
     →→→ [リモート ga53pd01 (Palladium)]
             ↓ スクリプト同期実行
             ↓ リアルタイム出力
@@ -99,6 +99,12 @@ palladium-automation/     # このプロジェクト（ラッパー）
 - ✅ シンプル（GUI操作不要）
 - ✅ リアルタイム出力
 - ✅ 安定（xdotoolの問題なし）
+- ⚠️ SSH接続を維持する必要あり（短〜中時間タスク向け）
+
+**適用ケース**:
+- 数分〜数十分のビルド・シミュレーション
+- リアルタイムで出力を確認したいタスク
+- 通常の開発作業
 
 ### X11転送方式（GUIツール表示用）
 
@@ -120,40 +126,15 @@ palladium-automation/     # このプロジェクト（ラッパー）
 - ✅ Claude Codeで画像確認可能
 - ✅ CDA、Simvision等に対応
 
-### GitHub非同期実行方式（長時間タスク用・オプション）
+### 長時間タスクについて
 
-**注意**: この方式は数時間以上の長時間タスク専用です。通常はSSH同期実行を使用してください。
+**現在の制限**: `claude_to_ga53pd01.sh`はSSH同期実行のみ実装されています。数時間以上かかる長時間タスクの場合は、以下の対処方法があります：
 
-```
-[ローカル RHEL8 + GNOME]
-    ↓ Claude Code動作
-    ↓ タスクスクリプト生成
-    ↓ SSH heredoc転送
-    →→→ [リモート ga53pd01 (/proj/tierivemu/work/henmi/etx_tmp/)]
-            ↓ バックグラウンド実行（nohup）
-            ↓ 実行完了後、結果をGitHubにpush（タスクIDディレクトリ）
-            ↓ リモートスクリプト自動削除
-            ↓
-[GitHub tier4/palladium-automation (.results/taskID/)]
-            ↓
-[ローカル] ←←← ポーリングで結果取得（10-30秒、タイムアウト可変）
-    ↓ ローカルアーカイブ保存 (.archive/YYYYMM/)
-    ↓ GitHubから自動削除
-```
+1. **SSH画面セッション使用**: `screen`または`tmux`でセッションを維持
+2. **nohupでバックグラウンド実行**: SSH経由で`nohup`コマンドを使用
+3. **GitHub非同期モードの実装**: 将来的な拡張として検討中
 
-**特徴**:
-- ✅ 長時間タスク対応（SSH切断後も実行継続）
-- ✅ タスクIDディレクトリで複数人並行実行対応
-- ⏱️ 結果取得に時間がかかる（10-30秒）
-- 使用方法: `USE_GITHUB=1 ./scripts/claude_to_ga53pd01.sh <script>`
-- タイムアウト調整: `GITHUB_POLL_TIMEOUT=28800` (例: 8時間)
-
-**適用ケース**:
-- 数時間以上かかるシミュレーション
-- SSH接続が切れる可能性のある長時間ビルド
-- 通常の短時間タスク（数分〜数十分）はSSH同期実行を使用
-
-このアーキテクチャにより、Claude Codeはローカル環境で動作しながら、リモートのPalladium環境を柔軟に制御できます。
+このアーキテクチャにより、Claude Codeはローカル環境で動作しながら、リモートのPalladium環境を効率的に制御できます。
 
 ## リモート実行スクリプト
 
@@ -163,26 +144,15 @@ ga53pd01でスクリプトを実行するメインスクリプトです。
 
 **基本的な使用方法**:
 ```bash
-# SSH同期実行（デフォルト・推奨）
+# SSH同期実行（現在の実装）
 ./scripts/claude_to_ga53pd01.sh /path/to/task_script.sh
-
-# GitHub非同期実行（長時間タスク用）
-USE_GITHUB=1 ./scripts/claude_to_ga53pd01.sh /path/to/long_task.sh
 ```
 
-**2つの実行モード**:
-
-1. **SSH同期実行**（デフォルト）
-   - 高速（2-3秒）・リアルタイム出力
-   - SSH接続を維持して即座に結果取得
-   - 短〜中時間タスク向け（数分〜数十分）
-
-2. **GitHub非同期実行**（`USE_GITHUB=1`）
-   - 長時間タスク対応（SSH切断後も実行継続）
-   - 結果取得に10-30秒
-   - 数時間以上のタスク向け
-
-詳細な仕様とテスト結果は [docs/ssh_direct_retrieval_test.md](docs/ssh_direct_retrieval_test.md) を参照してください。
+**機能**:
+- SSH heredoc方式による高速実行（2-3秒）
+- リアルタイム出力表示
+- SSH接続を維持して即座に結果取得
+- 短〜中時間タスク向け（数分〜数十分）
 
 **結果保存先**:
 - ローカルアーカイブ: `workspace/etx_results/.archive/YYYYMM/`
