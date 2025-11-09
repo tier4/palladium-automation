@@ -342,6 +342,170 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
 
 ---
 
+## 次のステップ
+
+セットアップが完了したら:
+
+1. **ga53pd01にhornetプロジェクトをクローン または pull**:
+
+   サンプルビルドスクリプトを実行するには、ga53pd01上にhornetをクローンする必要があります。
+
+   **既にクローン済みの場合はスキップ可能です。**
+
+   **手動でクローン**:
+   ```bash
+   # ga53pd01にログイン
+   ssh ga53pd01
+
+   # プロジェクトディレクトリに移動して、hornetをクローン
+   cd /proj/tierivemu/work/<your_palladium_username>
+
+   # デフォルトブランチ（main）をクローン
+   git clone https://github.com/tier4/hornet.git
+
+   # または特定のブランチを指定してクローン
+   # git clone -b <branch_name> https://github.com/tier4/hornet.git
+
+   exit
+   ```
+
+   **Claude Codeで自動実行** (推奨):
+   ```
+   「ga53pd01の /proj/tierivemu/work/<your_palladium_username>/ に
+   https://github.com/tier4/hornet.git のmainブランチをgit cloneして」
+
+   # 特定のブランチをクローンする場合:
+   「ga53pd01の /proj/tierivemu/work/<your_palladium_username>/ に
+   https://github.com/tier4/hornet.git の<branch_name>ブランチをgit cloneして」
+   ```
+
+2. **実際のタスクを実行**:
+
+   サンプルビルドスクリプトをテンプレートとして使用できます：
+   ```bash
+   # サンプルスクリプトを確認・編集
+   cat scripts/example_build_task.sh
+   # 必要に応じてプロジェクトパスを編集
+   vi scripts/example_build_task.sh
+
+   # 実行
+   ./scripts/claude_to_ga53pd01.sh scripts/example_build_task.sh
+   ```
+
+3. **Hornet RTL開発ワークフロー**:
+
+   **ローカルhornetがメイン開発環境です。**
+
+   ```
+   [ローカル] hornet/ でRTL解析・編集 (Serena MCP使用)
+      ↓
+   [ローカル] hornet/ で git commit & push (ブランチに注意)
+      ↓
+   [ga53pd01] hornet/ で git pull （上記と同じブランチ）
+      ↓
+   [ga53pd01] Palladiumエミュレーション実行
+      ↓
+   [ローカル] 結果分析（ログ解析）
+   ```
+
+   **実行例**:
+   ```bash
+   # 1. ローカルでRTL編集（Claude Code + Serena MCP）
+   cd hornet
+   # Serena MCPでVerilogコードを解析・編集
+   git add src/modified_file.sv
+   git commit -m "fix: update ALU logic"
+   git push origin <branch_name>
+
+   # 2. ga53pd01で最新コードを取得してビルド
+   # Claude Codeに以下のように指示:
+   「ga53pd01の/proj/tierivemu/work/henmi/hornetでgit pullして、ビルドを実行して」
+   ```
+
+4. **Claude Code実用プロンプト例**:
+
+   以下のようにClaude Codeに自然言語で指示することで、様々なタスクを自動実行できます。
+
+   **ビルド・シミュレーション**:
+   ```
+   「ga53pd01でhornetのビルドを実行して、エラーがあれば教えて」
+
+   「ga53pd01でXceliumシミュレーションを実行して、結果を分析して」
+
+   「ga53pd01でPalladiumエミュレーションを開始して、ログを監視して」
+   ```
+
+   **RTL解析・修正** (Serena MCP使用):
+   ```
+   「hornetのt4_hornet_topモジュールを解析して、ALUの接続を確認して」
+
+   「hornet/src/alu.svのビット幅エラーを修正して、commit & pushして」
+
+   「hornetのクロックドメイン構成を調べて、CDC (Clock Domain Crossing) を確認して」
+
+   「hornet内の未使用信号を検索して、リストアップして」
+
+   「hornetのメモリインターフェース部分のコードを読んで、動作を説明して」
+
+   「ga53pd01でgit pullしてから、修正したコードでビルドして」
+   ```
+
+   **RTLリファクタリング** (Serena MCP使用):
+   ```
+   「hornetの重複コードを見つけて、共通モジュールに抽出して」
+
+   「モジュール名を "old_alu" から "new_alu" に一括リネームして」
+
+   「未使用のパラメータを削除して、コードを整理して」
+   ```
+
+   **ログ解析・デバッグ**:
+   ```
+   「最新のシミュレーションログからエラーを抽出して、原因を分析して」
+
+   「ga53pd01のビルドログでwarningを確認して、重大なものを教えて」
+
+   「Palladiumのログでタイムアウトエラーを検索して」
+   ```
+
+   **自動テスト**:
+   ```
+   「hornetの全テストケースをga53pd01で実行して、結果をまとめて」
+
+   「regression testを実行して、前回との差分を報告して」
+
+   「特定のテストケースだけ再実行して、詳細なログを取得して」
+   ```
+
+   **定期タスク**:
+   ```
+   「毎日のnightly buildスクリプトを作成して、ga53pd01で実行できるようにして」
+
+   「ビルド→テスト→結果レポートの一連の流れを自動化して」
+   ```
+
+   **画面キャプチャと分析** (Playwright MCP使用):
+   ```
+   「ga53pd01のGUIアプリをキャプチャして、表示内容を分析して」
+
+   「Palladium Design Perspectiveの画面をキャプチャして、エラー表示がないか確認して」
+
+   「シミュレーション実行中の画面を定期的にキャプチャして、進行状況を監視して」
+   ```
+
+   **Cadenceマニュアル参照** (Playwright MCP使用):
+   ```
+   「Cadence SupportサイトでPalladiumのエラーコード "XYZ123" を調べて」
+
+   「IXCOMのコマンドリファレンスで "emulate -accel" オプションの使い方を教えて」
+
+   「Xceliumの最新リリースノートを確認して、バグ修正一覧を教えて」
+
+   「Palladium Z3のパフォーマンスチューニングガイドを検索して、推奨設定を教えて」
+   ```
+
+---
+
 ## トラブルシューティング
 
 ### SSH接続エラー: パスワードを要求される
@@ -422,98 +586,6 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    # configなしで接続テスト
    ssh -J henmi@10.108.64.1 henmi@ga53pd01 'hostname'
    ```
-
----
-
-## 次のステップ
-
-セットアップが完了したら:
-
-1. **ga53pd01にhornetプロジェクトをクローン**:
-
-   サンプルビルドスクリプトを実行するには、ga53pd01上にhornetをクローンする必要があります。
-
-   **既にクローン済みの場合はスキップ可能です。**
-
-   **手動でクローン**:
-   ```bash
-   # ga53pd01にログイン
-   ssh ga53pd01
-
-   # プロジェクトディレクトリに移動して、hornetをクローン
-   cd /proj/tierivemu/work/<your_palladium_username>
-
-   # デフォルトブランチ（main）をクローン
-   git clone https://github.com/tier4/hornet.git
-
-   # または特定のブランチを指定してクローン
-   # git clone -b <branch_name> https://github.com/tier4/hornet.git
-
-   exit
-   ```
-
-   **Claude Codeで自動実行** (推奨):
-   ```
-   「ga53pd01の /proj/tierivemu/work/<your_palladium_username>/ に
-   https://github.com/tier4/hornet.git のmainブランチをgit cloneして」
-
-   # 特定のブランチをクローンする場合:
-   「ga53pd01の /proj/tierivemu/work/<your_palladium_username>/ に
-   https://github.com/tier4/hornet.git の<branch_name>ブランチをgit cloneして」
-   ```
-
-2. **実際のタスクを実行**:
-
-   サンプルビルドスクリプトをテンプレートとして使用できます：
-   ```bash
-   # サンプルスクリプトを確認・編集
-   cat scripts/example_build_task.sh
-   # 必要に応じてプロジェクトパスを編集
-   vi scripts/example_build_task.sh
-
-   # 実行
-   ./scripts/claude_to_ga53pd01.sh scripts/example_build_task.sh
-   ```
-
-3. **Hornet RTL開発ワークフロー**:
-
-   **ローカルhornetがメイン開発環境です。**
-
-   ```
-   [ローカル] hornet/ でRTL解析・編集 (Serena MCP使用)
-      ↓
-   [ローカル] hornet/ で git commit & push
-      ↓
-   [ga53pd01] hornet/ で git pull
-      ↓
-   [ga53pd01] Palladiumエミュレーション実行
-      ↓
-   [ローカル] 結果分析（ログ解析）
-   ```
-
-   **実行例**:
-   ```bash
-   # 1. ローカルでRTL編集（Claude Code + Serena MCP）
-   cd hornet
-   # Serena MCPでVerilogコードを解析・編集
-   git add src/modified_file.sv
-   git commit -m "fix: update ALU logic"
-   git push origin <branch_name>
-
-   # 2. ga53pd01で最新コードを取得してビルド
-   # Claude Codeに以下のように指示:
-   「ga53pd01の/proj/tierivemu/work/henmi/hornetでgit pullして、ビルドを実行して」
-   ```
-
-4. **Claude Codeと統合**:
-   - Claude Codeでタスクを自動生成
-   - `claude_to_ga53pd01.sh` で実行
-   - 結果を確認・分析
-
-5. **独自のワークフローを構築**:
-   - テスト自動実行
-   - ログ分析
-   - レポート生成
 
 ---
 
