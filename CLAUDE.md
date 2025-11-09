@@ -80,19 +80,73 @@ palladium-automation/     # このプロジェクト（ラッパー）
 
 ## アーキテクチャ
 
+### SSH同期実行方式（推奨・現在の標準）
+
 ```
 [ローカル RHEL8 + GNOME]
     ↓ Claude Code動作
-    ↓ スクリプト生成
-    ↓ SCP転送
-    →→→ [リモート RHEL8 (ETX/Palladium)]
-            ↓ GUI自動操作で実行
-            ↓ 結果をGitHub経由で返却
+    ↓ タスクスクリプト生成
+    ↓ SSH heredoc転送（2-3秒）
+    →→→ [リモート ga53pd01 (Palladium)]
+            ↓ スクリプト同期実行
+            ↓ リアルタイム出力
+            ↓ 実行結果を即座に返却
             ↓
-[ローカル] ←←← GitHub経由で結果取得
+[ローカル] ←←← SSH経由で結果取得（即時）
+    ↓ ローカルアーカイブ保存
+    ↓ .archive/YYYYMM/
 ```
 
-このアーキテクチャにより、Claude Codeはローカル環境で動作しながら、リモートのPalladium環境を制御できます。
+**特徴**:
+- ✅ 高速（2-3秒のオーバーヘッド）
+- ✅ シンプル（GUI操作不要）
+- ✅ リアルタイム出力
+- ✅ 安定（xdotoolの問題なし）
+
+### X11転送方式（GUIツール表示用）
+
+```
+[ローカル RHEL8 + GNOME (DISPLAY=:2)]
+    ↑ X11転送で表示
+    ↑
+[リモート ga53pd01 (DISPLAY=10.108.64.21:16.0)]
+    ↓ GUIツール起動（CDA、波形ビューア等）
+    ↓ X11 Forwarding経由
+    ↓
+[ローカル] gnome-screenshot でキャプチャ
+    ↓
+[Claude Code] Read tool で画像確認
+```
+
+**特徴**:
+- ✅ GUIツールをローカルで表示
+- ✅ Claude Codeで画像確認可能
+- ✅ CDA、Simvision等に対応
+
+### GitHub非同期実行方式（長時間タスク用・オプション）
+
+```
+[ローカル RHEL8 + GNOME]
+    ↓ Claude Code動作
+    ↓ タスクスクリプト生成
+    ↓ SSH heredoc転送
+    →→→ [リモート ga53pd01]
+            ↓ バックグラウンド実行
+            ↓ 実行完了後、結果をGitHubにpush
+            ↓
+[GitHub tier4/palladium-automation]
+            ↓
+[ローカル] ←←← ポーリングで結果取得（10-30秒）
+    ↓ ローカルアーカイブ保存
+    ↓ GitHubから自動削除
+```
+
+**特徴**:
+- ✅ 長時間タスク対応（SSH切断後も実行継続）
+- ⏱️ 結果取得に時間がかかる
+- 使用方法: `USE_GITHUB=1 ./scripts/claude_to_ga53pd01.sh <script>`
+
+このアーキテクチャにより、Claude Codeはローカル環境で動作しながら、リモートのPalladium環境を柔軟に制御できます。
 
 ## 自動化スクリプト
 
