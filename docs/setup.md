@@ -384,12 +384,12 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    サンプルビルドスクリプトをテンプレートとして使用できます：
    ```bash
    # サンプルスクリプトを確認・編集
-   cat scripts/example_build_task.sh
+   cat scripts/ga53pd01_example_task.sh
    # 必要に応じてプロジェクトパスを編集
-   vi scripts/example_build_task.sh
+   vi scripts/ga53pd01_example_task.sh
 
    # 実行
-   ./scripts/claude_to_ga53pd01.sh scripts/example_build_task.sh
+   ./scripts/claude_to_ga53pd01.sh scripts/ga53pd01_example_task.sh
    ```
 
 3. **Hornet RTL開発ワークフロー**:
