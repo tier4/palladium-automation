@@ -52,8 +52,8 @@ palladium-automation/     # このプロジェクト（ラッパー）
    ```bash
    # 必要な手順はこれだけ
    cd ~/palladium-automation
-   cd mcp-servers/etx-automation
-   npm install
+   git clone https://github.com/tier4/hornet.git  # hornetプロジェクトのクローン
+   claude-serena  # Serena MCP設定（オプション）
    ```
 
 5. **設定ファイルの管理**
@@ -65,18 +65,15 @@ palladium-automation/     # このプロジェクト（ラッパー）
 
 ### ネットワーク構成
 - **ローカル環境**: RHEL8 + GNOME
-- **リモート環境(ETX)**: RHEL8 (Palladium チャンバー)
-- **制約事項**:
-  - リモート環境からインターネットへの直接アクセス不可
-  - SSH/HTTP/HTTPS プロトコル使用不可
-  - SCPによるファイル転送はローカル→リモートの片方向のみ可能
-  - GitHubへのアクセスは両環境で可能
+- **リモート環境**: RHEL8 + Palladium (ga53pd01)
+- **接続方式**: SSH ProxyJump経由（バスティオン: 10.108.64.1）
 
 ### 重要な接続情報
-- ETXユーザー: `khenmi`
-- ETXホスト: `ip-172-17-34-126`
-- リモート作業ディレクトリ: `/home/khenmi/workspace`
-- 結果共有用GitHubリポジトリ: `tier4/palladium-automation`
+- リモートホスト: `ga53pd01`
+- ユーザー名: `henmi`
+- リモート作業ディレクトリ: `/proj/tierivemu/work/henmi/`
+- 結果アーカイブ: `workspace/etx_results/.archive/YYYYMM/`
+- 結果共有用GitHubリポジトリ: `tier4/palladium-automation` (GitHub非同期モード時)
 
 ## アーキテクチャ
 
@@ -158,150 +155,48 @@ palladium-automation/     # このプロジェクト（ラッパー）
 
 このアーキテクチャにより、Claude Codeはローカル環境で動作しながら、リモートのPalladium環境を柔軟に制御できます。
 
-## 自動化スクリプト
+## リモート実行スクリプト
 
-### 1. GUI自動操作スクリプト (`scripts/etx_automation.sh`)
+### SSH統合スクリプト (`scripts/claude_to_ga53pd01.sh`)
 
-xdotoolを使用してETXターミナルウィンドウを制御します。
-
-**主要機能**:
-- `exec`: リモートETXで単一コマンドを実行
-- `script`: スクリプトファイルをETXに転送して実行（行単位echo方式）
-- `activate`: ETXウィンドウをアクティブ化
-- `list`: ウィンドウ一覧表示
-- `test`: 接続テスト
-
-**使用例**:
-```bash
-# 単一コマンド実行
-./scripts/etx_automation.sh exec 'ls -la'
-
-# スクリプト実行（行単位で転送）
-./scripts/etx_automation.sh script ./my_script.sh /tmp/remote_script.sh
-
-# ウィンドウアクティブ化
-./scripts/etx_automation.sh activate
-
-# ウィンドウ一覧表示
-./scripts/etx_automation.sh list
-
-# 接続テスト
-./scripts/etx_automation.sh test
-```
-
-**重要事項**:
-- ETX Xtermウィンドウを事前に起動しておく必要があります（Start Xtermをクリック）
-- スクリプトは `$HOME/.etx_tmp/` ディレクトリに保存されます（複数ユーザー対応）
-- ファイル名はタイムスタンプ + プロセスIDでユニークになります
-
-### 2. ETXウィンドウキャプチャスクリプト (`scripts/capture_etx_window.sh`)
-
-ETX Xtermの画面をPNG形式でキャプチャします。
-
-**使用例**:
-```bash
-# デフォルトのファイル名でキャプチャ
-./scripts/capture_etx_window.sh
-
-# ファイル名を指定してキャプチャ
-./scripts/capture_etx_window.sh /path/to/output.png
-```
-
-**機能**:
-- ETX Xtermウィンドウを自動検出
-- PNG形式で保存（netpbm使用）
-- Claude Codeから画像として確認可能
-
-### 3. SSH統合スクリプト (`scripts/claude_to_ga53pd01.sh`) **推奨**
-
-SSH経由でga53pd01コンピュートサーバーにスクリプトを転送・実行し、結果を取得する統合スクリプトです。
-
-**2つの実行モード**:
-
-#### モード1: SSH同期実行（デフォルト・推奨）
-- ✅ SSH heredoc方式による高速・安定したスクリプト転送
-- ✅ リアルタイムで実行結果を表示
-- ✅ 即座に結果取得（2-3秒）
-- ✅ GUI操作不要（xdotoolの問題を解消）
-- ✅ ローカルアーカイブ（`.archive/YYYYMM/`）
-- ⚠️ SSH接続維持が必要（短〜中時間タスク向け）
-
-#### モード2: GitHub非同期実行（長時間タスク用）
-- ✅ GitHub経由の結果自動回収
-- ✅ SSH切断後も実行継続
-- ✅ タスクIDディレクトリ方式（複数人並行実行対応）
-- ✅ 長期実行タスク対応（可変タイムアウト）
-- ⏱️ 結果取得に時間がかかる（10-30秒）
-
-**使用例**:
-```bash
-# 基本的な使用方法（SSH同期実行）
-./scripts/claude_to_ga53pd01.sh /path/to/task_script.sh
-
-# GitHub非同期実行モード（長時間タスク用）
-USE_GITHUB=1 ./scripts/claude_to_ga53pd01.sh /path/to/long_task.sh
-
-# GitHub非同期 + 長時間タイムアウト（8時間）
-USE_GITHUB=1 GITHUB_POLL_TIMEOUT=28800 ./scripts/claude_to_ga53pd01.sh /path/to/very_long_task.sh
-
-# 結果の保存先
-# - SSH同期: ローカルアーカイブのみ: workspace/etx_results/.archive/YYYYMM/
-# - GitHub非同期: GitHub一時保存 + ローカルアーカイブ
-```
-
-**環境変数**:
-- `USE_GITHUB`: GitHub非同期モード有効化、デフォルト: 0（SSH同期）
-- `REMOTE_HOST`: リモートホスト名、デフォルト: ga53pd01
-- `REMOTE_USER`: SSHユーザー名、デフォルト: henmi
-- `PROJECT_NAME`: プロジェクト名、デフォルト: tierivemu
-- `GITHUB_POLL_TIMEOUT`: タイムアウト（秒）、デフォルト: 1800（30分）※GitHub非同期時のみ
-- `GITHUB_POLL_INTERVAL`: ポーリング間隔（秒）、デフォルト: 10※GitHub非同期時のみ
-- `SAVE_RESULTS_LOCALLY`: ローカル保存、デフォルト: 1
-
-**動作フロー（SSH同期実行）**:
-1. タスクスクリプトをSSH stdin経由でga53pd01に転送
-2. ga53pd01で同期実行（リアルタイム出力）
-3. 実行完了後、結果をローカルアーカイブに保存
-4. リモートに一時ファイルは残らない
-
-**動作フロー（GitHub非同期実行）**:
-1. タスクスクリプトとラッパースクリプトを生成
-2. SSH heredocでga53pd01に転送
-3. ga53pd01でバックグラウンド実行
-4. 実行完了後、リモートスクリプトを自動削除
-5. 結果をGitHubにpush（タスクIDディレクトリ）
-6. ローカルでポーリング＆結果取得
-7. ローカルアーカイブに保存
-8. GitHubから自動削除
-
-**リモートスクリプト保存先**: `/proj/tierivemu/work/henmi/etx_tmp/`（GitHub非同期時のみ）
-
-**詳細**: テスト結果と比較は [docs/ssh_direct_retrieval_test.md](docs/ssh_direct_retrieval_test.md) を参照
-
-### 4. GUI統合スクリプト (`scripts/claude_to_etx.sh`) **レガシー**
-
-xdotoolを使用してETXターミナルでスクリプトを実行する旧方式です。
-
-**注意**: GUI操作による不安定性のため、`claude_to_ga53pd01.sh`の使用を推奨します。
-
-**動作フロー**:
-1. タスクスクリプトとラッパースクリプトを生成
-2. xdotoolでETXに転送（行単位echo方式）
-3. ETXでバックグラウンド実行
-4. 結果をGitHubにpush
-5. ローカルで結果取得
-
-## Claude Codeからの使用方法
-
-SSH同期実行がシンプルなため、MCPサーバーは不要です。Claude CodeのBashツールから直接スクリプトを実行できます。
+ga53pd01でスクリプトを実行するメインスクリプトです。
 
 **基本的な使用方法**:
 ```bash
-# Claude Codeが生成したスクリプトを実行
+# SSH同期実行（デフォルト・推奨）
 ./scripts/claude_to_ga53pd01.sh /path/to/task_script.sh
+
+# GitHub非同期実行（長時間タスク用）
+USE_GITHUB=1 ./scripts/claude_to_ga53pd01.sh /path/to/long_task.sh
 ```
 
-**Claude Codeでの実行例**:
+**2つの実行モード**:
+
+1. **SSH同期実行**（デフォルト）
+   - 高速（2-3秒）・リアルタイム出力
+   - SSH接続を維持して即座に結果取得
+   - 短〜中時間タスク向け（数分〜数十分）
+
+2. **GitHub非同期実行**（`USE_GITHUB=1`）
+   - 長時間タスク対応（SSH切断後も実行継続）
+   - 結果取得に10-30秒
+   - 数時間以上のタスク向け
+
+詳細な仕様とテスト結果は [docs/ssh_direct_retrieval_test.md](docs/ssh_direct_retrieval_test.md) を参照してください。
+
+**結果保存先**:
+- ローカルアーカイブ: `workspace/etx_results/.archive/YYYYMM/`
+- タスクIDディレクトリ形式で保存
+
+### レガシースクリプト
+
+GUI自動操作スクリプト（xdotoolベース）は `scripts/.legacy/` に移動されました。詳細は [scripts/.legacy/README.md](scripts/.legacy/README.md) を参照してください。
+
+## Claude Codeからの使用方法
+
+Claude CodeのBashツールから直接スクリプトを実行できます。
+
+**実行例**:
 ```
 ユーザー: "ga53pd01でホスト名を確認して"
 
@@ -320,62 +215,70 @@ Claude Code:
 
 ## 開発ワークフロー
 
-### Claude CodeでETXを操作する際の推奨手順
+### ga53pd01での作業手順
 
 1. **スクリプト生成**: ローカルでタスクに応じたbashスクリプトを生成
-2. **MCP経由で実行**: `run_script_on_etx` ツールでETXに転送・実行
-3. **結果確認**: GitHub経由で実行結果を自動取得・表示
-4. **エラー対応**: 必要に応じて `execute_on_etx` で直接コマンド実行
+2. **SSH実行**: `./scripts/claude_to_ga53pd01.sh <script>` で実行
+3. **結果確認**: リアルタイムまたはアーカイブから確認
+4. **デバッグ**: 必要に応じてSSHで直接ログイン
 
 ### 典型的なユースケース
 
 **ビルド実行**:
 ```
-ユーザー: 「ETXでgionプロジェクトのビルドを実行して」
-→ ビルドスクリプト生成 → run_script_on_etx → 結果表示
+ユーザー: 「ga53pd01でgionプロジェクトのビルドを実行して」
+→ ビルドスクリプト生成 → claude_to_ga53pd01.sh で実行 → 結果表示
 ```
 
 **ログ確認**:
 ```
-ユーザー: 「ETXでXceliumシミュレーションのエラーログを確認して」
-→ execute_on_etx で grep実行 → 結果解析 → エラー原因特定
+ユーザー: 「ga53pd01でXceliumシミュレーションのエラーログを確認して」
+→ grepスクリプト生成 → claude_to_ga53pd01.sh で実行 → 結果解析 → エラー原因特定
 ```
 
 ## トラブルシューティング
 
-### xdotoolの初期設定
-
-```bash
-# 必要パッケージのインストール
-sudo dnf install xdotool wmctrl xclip
-
-# X11ディスプレイ確認
-echo $DISPLAY  # 出力例: :0
-
-# 権限設定
-xhost +SI:localuser:$(whoami)
-
-# ETXウィンドウの検索
-wmctrl -l
-xdotool search --name "ETX Terminal"
-```
-
-### SCP接続の確認
+### SSH接続の問題
 
 ```bash
 # SSH鍵の確認
 ssh-add -l
 
-# 手動転送テスト
-scp /tmp/test.txt khenmi@ip-172-17-34-126:/tmp/
+# 接続テスト
+ssh ga53pd01 'hostname'
+
+# ProxyJump設定確認
+cat ~/.ssh/config | grep -A5 "Host ga53pd01"
+
+# デバッグモードで接続
+ssh -v ga53pd01
 ```
 
-### GitHub同期の問題
+### スクリプト実行エラー
 
-結果取得がタイムアウトする場合:
-1. リモート環境でGitHub認証が正しく設定されているか確認
-2. ネットワーク遅延を考慮してタイムアウト時間を調整
-3. 手動でGitHubリポジトリを確認
+```bash
+# デバッグモードで実行
+DEBUG=1 ./scripts/claude_to_ga53pd01.sh /path/to/script.sh
+
+# アーカイブ確認
+ls -lh workspace/etx_results/.archive/$(date +%Y%m)/
+
+# 最新の結果ファイルを表示
+ls -lt workspace/etx_results/.archive/$(date +%Y%m)/ | head -5
+```
+
+### GitHub非同期実行のタイムアウト
+
+長時間タスクで結果取得がタイムアウトする場合:
+
+```bash
+# タイムアウト時間を延長（例: 8時間）
+USE_GITHUB=1 GITHUB_POLL_TIMEOUT=28800 ./scripts/claude_to_ga53pd01.sh /path/to/long_task.sh
+
+# リモート環境でGitHub認証確認
+ssh ga53pd01 'git config --get user.name'
+ssh ga53pd01 'git config --get user.email'
+```
 
 ## ディレクトリ構造
 
