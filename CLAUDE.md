@@ -36,7 +36,13 @@ palladium-automation/     # このプロジェクト（ラッパー）
    ↓
 [ローカル] hornet/ で git commit & push
    ↓
-[ga53pd01] hornet/ で git pull
+[自動] claude_to_ga53pd01.sh がローカルをチェック
+   ✓ 未コミット変更なし
+   ✓ 未プッシュコミットなし
+   ↓
+[自動] ga53pd01で git pull実行
+   ↓
+[自動] ブランチ・コミットの一致確認
    ↓
 [ga53pd01] Palladiumエミュレーション実行
    ↓
@@ -53,16 +59,36 @@ git add src/modified_file.sv
 git commit -m "fix: update ALU logic"
 git push origin <branch_name>
 
-# 2. ga53pd01で最新コードを取得してビルド
-# Claude Codeに以下のように指示:
-「ga53pd01の/proj/tierivemu/work/henmi/hornetでgit pullして、ビルドを実行して」
+# 2. スクリプト実行（git pullは自動）
+./scripts/claude_to_ga53pd01.sh scripts/ga53pd01_example_task.sh
+# または Claude Codeに指示:
+「ga53pd01でビルドを実行して」
 ```
+
+### 自動Git同期機能
+
+`claude_to_ga53pd01.sh`は以下を自動的に実行します：
+
+1. **ローカルhornetチェック**
+   - 未コミット変更の検出
+   - 未プッシュコミットの検出
+   - 問題があれば実行を中止
+
+2. **ga53pd01で自動git pull**
+   - 最新コードを自動取得
+   - プル失敗時はエラー
+
+3. **同期状態の確認**
+   - ブランチ名の一致確認
+   - コミットハッシュの一致確認
+   - 不一致時は実行を中止
 
 ### 重要な注意事項
 
-- **ローカルとga53pd01のhornetは同じブランチを使用してください**
+- **git push を忘れずに**: ローカルの変更は必ずプッシュしてから実行
+- **自動同期**: ga53pd01への手動git pullは不要（自動実行）
+- **同じブランチ使用**: ローカルとga53pd01は同じブランチで作業
 - ローカルhornetでSerena MCPを使ってRTL解析・編集を行う
-- 修正後は必ずgit push してからga53pd01でgit pull
 - ga53pd01はビルド・エミュレーション実行専用
 
 ## 環境設定

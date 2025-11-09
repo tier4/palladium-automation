@@ -44,6 +44,7 @@ Cadenceのポリシーにより、**Palladiumエミュレーション環境（�
 
 - ✅ **Hornet統合**: hornetプロジェクトをgit cloneで組み込み
 - ✅ **Serena MCP**: Verilog/SystemVerilogのシンボルベース解析
+- ✅ **自動Git同期**: ローカルとga53pd01のhornetを自動同期・検証
 - ✅ **SSH同期実行方式**: 高速（2-3秒）・シンプル・GUI操作不要
 - ✅ **リアルタイム出力**: 実行中の出力をその場で確認
 - ✅ **ローカルアーカイブ**: `.archive/YYYYMM/` に自動保存

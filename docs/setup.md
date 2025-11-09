@@ -399,9 +399,15 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    ```
    [ローカル] hornet/ でRTL解析・編集 (Serena MCP使用)
       ↓
-   [ローカル] hornet/ で git commit & push (ブランチに注意)
+   [ローカル] hornet/ で git commit & push
       ↓
-   [ga53pd01] hornet/ で git pull （上記と同じブランチ）
+   [自動] claude_to_ga53pd01.sh がローカルをチェック
+      ✓ 未コミット変更なし
+      ✓ 未プッシュコミットなし
+      ↓
+   [自動] ga53pd01で git pull実行
+      ↓
+   [自動] ブランチ・コミットの一致確認
       ↓
    [ga53pd01] Palladiumエミュレーション実行
       ↓
@@ -417,10 +423,17 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    git commit -m "fix: update ALU logic"
    git push origin <branch_name>
 
-   # 2. ga53pd01で最新コードを取得してビルド
-   # Claude Codeに以下のように指示:
-   「ga53pd01の/proj/tierivemu/work/henmi/hornetでgit pullして、ビルドを実行して」
+   # 2. スクリプト実行（git pullは自動で実行される）
+   ./scripts/claude_to_ga53pd01.sh scripts/ga53pd01_example_task.sh
+   # または Claude Codeに指示:
+   「ga53pd01でビルドを実行して」
    ```
+
+   **自動Git同期機能**:
+   - ✅ ローカルの未コミット/未プッシュを自動検出
+   - ✅ ga53pd01で自動git pull実行
+   - ✅ ブランチ・コミットの一致を自動確認
+   - ✅ 不一致時は実行を中止して警告
 
 4. **Claude Code実用プロンプト例**:
 
