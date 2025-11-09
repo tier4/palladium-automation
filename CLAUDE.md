@@ -125,26 +125,36 @@ palladium-automation/     # このプロジェクト（ラッパー）
 
 ### GitHub非同期実行方式（長時間タスク用・オプション）
 
+**注意**: この方式は数時間以上の長時間タスク専用です。通常はSSH同期実行を使用してください。
+
 ```
 [ローカル RHEL8 + GNOME]
     ↓ Claude Code動作
     ↓ タスクスクリプト生成
     ↓ SSH heredoc転送
-    →→→ [リモート ga53pd01]
-            ↓ バックグラウンド実行
-            ↓ 実行完了後、結果をGitHubにpush
+    →→→ [リモート ga53pd01 (/proj/tierivemu/work/henmi/etx_tmp/)]
+            ↓ バックグラウンド実行（nohup）
+            ↓ 実行完了後、結果をGitHubにpush（タスクIDディレクトリ）
+            ↓ リモートスクリプト自動削除
             ↓
-[GitHub tier4/palladium-automation]
+[GitHub tier4/palladium-automation (.results/taskID/)]
             ↓
-[ローカル] ←←← ポーリングで結果取得（10-30秒）
-    ↓ ローカルアーカイブ保存
+[ローカル] ←←← ポーリングで結果取得（10-30秒、タイムアウト可変）
+    ↓ ローカルアーカイブ保存 (.archive/YYYYMM/)
     ↓ GitHubから自動削除
 ```
 
 **特徴**:
 - ✅ 長時間タスク対応（SSH切断後も実行継続）
-- ⏱️ 結果取得に時間がかかる
+- ✅ タスクIDディレクトリで複数人並行実行対応
+- ⏱️ 結果取得に時間がかかる（10-30秒）
 - 使用方法: `USE_GITHUB=1 ./scripts/claude_to_ga53pd01.sh <script>`
+- タイムアウト調整: `GITHUB_POLL_TIMEOUT=28800` (例: 8時間)
+
+**適用ケース**:
+- 数時間以上かかるシミュレーション
+- SSH接続が切れる可能性のある長時間ビルド
+- 通常の短時間タスク（数分〜数十分）はSSH同期実行を使用
 
 このアーキテクチャにより、Claude Codeはローカル環境で動作しながら、リモートのPalladium環境を柔軟に制御できます。
 
