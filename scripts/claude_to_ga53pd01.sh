@@ -72,6 +72,51 @@ Features:
 EOF
 }
 
+# Check local hornet Git status
+check_local_hornet_git() {
+    local hornet_path="${PROJECT_ROOT}/hornet"
+
+    if [ ! -d "${hornet_path}/.git" ]; then
+        log_warn "Local hornet is not a git repository: ${hornet_path}"
+        return 1
+    fi
+
+    log_info "Checking local hornet Git status..."
+    cd "${hornet_path}"
+
+    # Check for uncommitted changes
+    if [ -n "$(git status --porcelain)" ]; then
+        log_error "Local hornet has uncommitted changes!"
+        git status --short
+        log_error "Please commit or stash your changes before running on ga53pd01"
+        return 1
+    fi
+
+    # Check for unpushed commits
+    git fetch origin --quiet 2>/dev/null || true
+    local local_commit=$(git rev-parse HEAD)
+    local remote_commit=$(git rev-parse @{u} 2>/dev/null)
+
+    if [ -z "$remote_commit" ]; then
+        log_warn "Local hornet branch has no upstream configured"
+    elif [ "$local_commit" != "$remote_commit" ]; then
+        log_error "Local hornet has unpushed commits!"
+        log_error "Local:  $local_commit"
+        log_error "Remote: $remote_commit"
+        log_error "Please push your commits before running on ga53pd01"
+        return 1
+    fi
+
+    # Store local Git info for later comparison
+    LOCAL_BRANCH=$(git branch --show-current)
+    LOCAL_COMMIT=$(git rev-parse HEAD)
+
+    log_info "Local hornet: branch=${LOCAL_BRANCH}, commit=${LOCAL_COMMIT:0:8}"
+
+    cd - > /dev/null
+    return 0
+}
+
 # Main execution
 main() {
     local task_script="$1"
@@ -84,6 +129,12 @@ main() {
 
     if [ ! -f "$task_script" ]; then
         log_error "Task script not found: $task_script"
+        exit 1
+    fi
+
+    # Check local hornet Git status
+    if ! check_local_hornet_git; then
+        log_error "Local hornet Git check failed. Aborting."
         exit 1
     fi
 
@@ -104,6 +155,63 @@ main() {
 
     # Create archive directory
     mkdir -p "$archive_path"
+
+    log_info "Syncing remote hornet on ${REMOTE_HOST}..."
+
+    # Sync remote hornet and get Git info
+    local remote_git_info=$(ssh "${REMOTE_HOST}" 'bash -s' <<'SYNC_SCRIPT'
+HORNET_DIR="/proj/tierivemu/work/${USER}/hornet"
+
+if [ -d "${HORNET_DIR}/.git" ]; then
+    cd "${HORNET_DIR}"
+
+    # Pull latest changes
+    echo "INFO: Pulling latest changes..."
+    if git pull --quiet 2>&1; then
+        echo "INFO: Git pull successful"
+    else
+        echo "ERROR: Git pull failed"
+        exit 1
+    fi
+
+    # Output Git info for local comparison
+    echo "REMOTE_BRANCH=$(git branch --show-current)"
+    echo "REMOTE_COMMIT=$(git rev-parse HEAD)"
+else
+    echo "ERROR: Remote hornet is not a git repository: ${HORNET_DIR}"
+    exit 1
+fi
+SYNC_SCRIPT
+)
+
+    local sync_exit_code=$?
+    if [ $sync_exit_code -ne 0 ]; then
+        log_error "Failed to sync remote hornet"
+        echo "$remote_git_info"
+        exit 1
+    fi
+
+    # Parse remote Git info
+    eval "$remote_git_info"
+    log_info "Remote hornet: branch=${REMOTE_BRANCH}, commit=${REMOTE_COMMIT:0:8}"
+
+    # Compare local and remote Git info
+    if [ "$LOCAL_BRANCH" != "$REMOTE_BRANCH" ]; then
+        log_error "Branch mismatch!"
+        log_error "  Local:  $LOCAL_BRANCH"
+        log_error "  Remote: $REMOTE_BRANCH"
+        exit 1
+    fi
+
+    if [ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]; then
+        log_error "Commit mismatch!"
+        log_error "  Local:  $LOCAL_COMMIT"
+        log_error "  Remote: $REMOTE_COMMIT"
+        exit 1
+    fi
+
+    log_info "✓ Local and remote hornet are in sync"
+    echo ""
 
     log_info "Executing script on ${REMOTE_HOST}..."
     log_info "Output will be saved to: $result_file"

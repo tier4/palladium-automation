@@ -18,6 +18,18 @@ if [ -d "${PROJECT_DIR}" ]; then
     cd "${PROJECT_DIR}"
     echo "Changed to project directory: $(pwd)"
 
+    # Display Git information for reference
+    echo ""
+    echo "=== Git Information ==="
+    if [ -d .git ]; then
+        echo "Branch: $(git branch --show-current)"
+        echo "Commit: $(git log -1 --oneline)"
+        echo "Status: $(git status --porcelain | wc -l) uncommitted files"
+    else
+        echo "WARNING: Not a git repository"
+    fi
+    echo "======================="
+
     # Example build commands (modify as needed)
     echo ""
     echo "Running make clean..."
