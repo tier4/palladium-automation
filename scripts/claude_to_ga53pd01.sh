@@ -4,7 +4,19 @@
 
 set -e
 
-# Configuration
+# Load environment variables from .env if it exists
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+ENV_FILE="${PROJECT_ROOT}/.env"
+
+if [ -f "${ENV_FILE}" ]; then
+    # Source .env file, ignoring comments and empty lines
+    set -a
+    source <(grep -v '^#' "${ENV_FILE}" | grep -v '^$')
+    set +a
+fi
+
+# Configuration with defaults
 REMOTE_HOST="${REMOTE_HOST:-ga53pd01}"
 REMOTE_USER="${REMOTE_USER:-henmi}"
 PROJECT_NAME="${PROJECT_NAME:-tierivemu}"

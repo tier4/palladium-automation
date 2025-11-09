@@ -27,6 +27,38 @@ palladium-automation/     # このプロジェクト（ラッパー）
 3. **結果分析**: 実行結果の自動回収・アーカイブ・解析
 4. **ワンストップ**: palladium-automation内で解析から実行まで完結
 
+## 環境設定
+
+### .env ファイルによる環境カスタマイズ
+
+**このプロジェクトは `.env` ファイルで環境変数を設定します。**
+
+#### 初回セットアップ
+
+```bash
+# .env.example をコピーして自分の環境に合わせて編集
+cp .env.example .env
+nano .env
+```
+
+#### 設定例
+
+```bash
+# Remote SSH Configuration
+REMOTE_HOST=ga53pd01
+REMOTE_USER=your_username
+PROJECT_NAME=your_project_name
+
+# Bastion Configuration
+BASTION_HOST=10.108.64.1
+BASTION_USER=${REMOTE_USER}
+```
+
+#### 重要事項
+- `.env` ファイルは `.gitignore` に含まれており、Git管理対象外
+- 各ユーザーが自分の環境に合わせて設定
+- スクリプトは `.env` から環境変数を自動読み込み
+
 ## 重要な開発ルール
 
 ### プロジェクト内完結の原則
@@ -69,11 +101,15 @@ palladium-automation/     # このプロジェクト（ラッパー）
 - **接続方式**: SSH ProxyJump経由（バスティオン: 10.108.64.1）
 
 ### 重要な接続情報
-- リモートホスト: `ga53pd01`
-- ユーザー名: `henmi`
-- リモート作業ディレクトリ: `/proj/tierivemu/work/henmi/`
+
+**注意**: 以下の設定は `.env` ファイルで環境に合わせてカスタマイズできます。
+
+- リモートホスト: `${REMOTE_HOST}` (デフォルト: `ga53pd01`)
+- ユーザー名: `${REMOTE_USER}` (`.env` で設定)
+- プロジェクト名: `${PROJECT_NAME}` (`.env` で設定)
+- リモート作業ディレクトリ: `/proj/${PROJECT_NAME}/work/${REMOTE_USER}/`
 - 結果アーカイブ: `workspace/etx_results/.archive/YYYYMM/`
-- 結果共有用GitHubリポジトリ: `tier4/palladium-automation` (GitHub非同期モード時)
+- GitHubリポジトリ: `tier4/palladium-automation`
 
 ## アーキテクチャ
 

@@ -111,14 +111,32 @@ git clone https://github.com/tier4/palladium-automation.git
 cd palladium-automation
 ```
 
-### 3. Hornetプロジェクトのクローン
+### 3. 環境変数の設定
+
+```bash
+# .env.exampleをコピーして自分の環境に合わせて編集
+cp .env.example .env
+nano .env
+```
+
+**設定例**:
+```bash
+REMOTE_HOST=ga53pd01
+REMOTE_USER=your_username
+PROJECT_NAME=your_project_name
+BASTION_HOST=10.108.64.1
+```
+
+**重要**: `.env` ファイルはGit管理対象外なので、各自の環境に合わせて設定してください。
+
+### 4. Hornetプロジェクトのクローン
 
 ```bash
 # palladium-automation内にhornetをクローン
 git clone https://github.com/tier4/hornet.git
 ```
 
-### 4. Serena MCP設定（オプション）
+### 5. Serena MCP設定（オプション）
 
 Verilog/SystemVerilog解析を使用する場合：
 
@@ -130,7 +148,7 @@ claude-serena
 
 詳細は [docs/mcp_setup_cli.md](docs/mcp_setup_cli.md) を参照してください。
 
-### 5. 接続テスト
+### 6. 接続テスト
 
 ```bash
 # ga53pd01への接続確認
