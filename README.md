@@ -269,32 +269,8 @@ ls -lh workspace/etx_results/.archive/$(date +%Y%m)/
 ls -lt workspace/etx_results/.archive/$(date +%Y%m)/ | head -5
 ```
 
-## 開発ステータス
-
-- [x] プロジェクト構造の作成
-- [x] 環境セットアップ
-- [x] SSH公開鍵認証の設定
-- [x] SSH同期実行スクリプトの実装
-- [x] ローカルアーカイブ機能の実装
-- [x] 統合テスト
-- [x] ドキュメント作成
-
-詳細な実装経緯は以下を参照してください：
-- [`docs/ssh_direct_retrieval_test.md`](docs/ssh_direct_retrieval_test.md) - SSH直接取得テスト結果
-- [`docs/.legacy/plan.md`](docs/.legacy/plan.md) - 実装プラン（レガシー）
-- [`docs/.legacy/memo.md`](docs/.legacy/memo.md) - 技術検討メモ（レガシー）
-
 ## ドキュメント
 
 - [セットアップガイド](docs/setup.md) - 詳細なセットアップ手順
 - [Serena MCP設定](docs/mcp_setup_cli.md) - Verilog解析MCPの設定
 - [CLAUDE.md](CLAUDE.md) - Claude Code向けガイド
-- [実装・技術資料](docs/.legacy/) - 初期の技術検討・実装プラン
-
-## ライセンス
-
-(ライセンス情報を追加)
-
-## 貢献
-
-(貢献ガイドラインを追加)
