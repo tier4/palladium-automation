@@ -2,6 +2,17 @@
 
 **Hornet GPU/GPGPU開発のラッパープロジェクト**。SSH経由のga53pd01 Palladiumエミュレータ制御と、Serena MCPによるVerilog/SystemVerilog解析を統合し、RTL開発からシミュレーション実行までをワンストップで実現します。
 
+## 背景
+
+Cadenceのポリシーにより、**Palladiumエミュレーション環境（チャンバー）にClaude Codeを直接インストールできない**という制約があります。
+
+この制約に対し、本プロジェクトでは以下のアプローチを採用しています：
+
+- **接続元（ローカル: t4_head）**: Claude Codeを実行し、外部APIにアクセス可能
+- **接続先（リモート: Palladiumチャンバー）**: Claude Code不要、SSH経由で制御
+
+この構成により、Palladiumチャンバー側でClaude Codeが外部にアクセスできなくても、ローカルのClaude CodeからSSH経由でPalladiumエミュレーション環境を統合的に制御・デバッグできる環境を実現しています。
+
 ## 重要: プロジェクト内完結の原則
 
 **このプロジェクトはすべての依存関係とツールをプロジェクト内で管理します。**
