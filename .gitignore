@@ -1,6 +1,10 @@
-# Claude Code一時ファイル
+# Claude Code一時ファイル・個人設定
 .claude/etx_tasks/*
 !.claude/etx_tasks/.gitkeep
+.claude/settings.local.json
+
+# Playwright MCP cache
+.playwright-mcp/
 
 # ワークスペース結果ファイル
 # ローカルアーカイブのみ除外、results/はGit管理
