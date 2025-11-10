@@ -130,9 +130,9 @@ cd palladium-automation
 git clone https://github.com/tier4/hornet.git
 ```
 
-### 4. MCP設定（オプション）
+### 4. MCP設定
 
-このプロジェクトでは以下のMCPサーバーを利用できます。各自の環境で必要に応じてインストールしてください。
+このプロジェクトでは以下のMCPサーバーを利用できます。各自の環境でインストールしてください。
 
 #### Serena MCP - Verilog/SystemVerilog解析
 

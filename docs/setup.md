@@ -220,7 +220,7 @@ chmod +x scripts/claude_to_ga53pd01.sh
 
 ### 6. MCP設定
 
-**注意**: MCPサーバーは各自の環境でインストールが必要です。
+MCPサーバーは各自の環境でインストールしてください。
 
 #### Serena MCP - Verilog/SystemVerilog解析
 
