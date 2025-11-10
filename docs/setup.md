@@ -220,7 +220,11 @@ chmod +x scripts/claude_to_ga53pd01.sh
 
 ### 6. MCP設定
 
-MCPサーバーは各自の環境でインストールしてください。
+**重要**: MCPサーバーは`palladium-automation`ディレクトリで実行してください。
+~ 直下にpalladium-automationを入れた場合、
+```bash
+cd ~/palladium-automation
+```
 
 #### Serena MCP - Verilog/SystemVerilog解析
 
@@ -245,7 +249,8 @@ vi ~/.bashrc
 # 2. .bashrcを再読み込み
 source ~/.bashrc
 
-# 3. Serena MCPをインストール
+# 3. palladium-automationディレクトリでインストール
+cd ~/palladium-automation
 claude-serena
 ```
 
@@ -261,7 +266,8 @@ Cadence Supportサイトのドキュメント参照ができるようにしま�
 **インストール手順**:
 
 ```bash
-# Playwright MCPをインストール
+# palladium-automationディレクトリでインストール
+cd ~/palladium-automation
 claude mcp add playwright npx @playwright/mcp@latest
 ```
 

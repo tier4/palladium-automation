@@ -132,29 +132,27 @@ git clone https://github.com/tier4/hornet.git
 
 ### 4. MCP設定
 
-このプロジェクトでは以下のMCPサーバーを利用できます。各自の環境でインストールしてください。
+**重要**: MCPサーバーは`palladium-automation`ディレクトリで実行してください。
+
+```bash
+cd ~/palladium-automation
+```
 
 #### Serena MCP - Verilog/SystemVerilog解析
 
-RTL解析機能が必要な場合：
-
 ```bash
-# Serena MCPを追加
 claude-serena
 # または手動で ~/.claude.json に設定
 ```
 
 **機能**: hornetプロジェクトのVerilog/SystemVerilogコードのシンボルベース解析
 
-詳細は [docs/mcp_setup_cli.md](docs/mcp_setup_cli.md) を参照してください。
+詳細は [docs/setup.md](docs/setup.md) を参照してください。
 
 #### Playwright MCP - ブラウザ自動化
 
-Cadence Supportサイトのドキュメント参照が必要な場合：
-
 ```bash
-# Claude Desktopで自動的に利用可能
-# 追加のインストール・設定は不要
+claude mcp add playwright npx @playwright/mcp@latest
 ```
 
 **機能**: Palladium/IXCOMドキュメントの検索・閲覧の自動化
