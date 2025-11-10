@@ -337,38 +337,31 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
 
 セットアップが完了したら:
 
-1. **ga53pd01にhornetプロジェクトをクローン または pull**:
+1. **ga53pd01にhornetプロジェクトをクローン（初回のみ）**:
 
-   サンプルビルドスクリプトを実行するには、ga53pd01上にhornetをクローンする必要があります。
+   **注意**: 2回目以降は不要です。`claude_to_ga53pd01.sh`が自動的に`git pull`を実行します。
 
-   **既にクローン済みの場合はスキップ可能です。**
+   Claude Codeに指示（推奨）：
+   ```
+   「ga53pd01の /proj/tierivemu/work/<your_palladium_username>/ に
+   hornetの<branch_name>ブランチをgit cloneして」
+   ```
 
-   **手動でクローン**:
+   **手動で実行する場合**:
    ```bash
    # ga53pd01にログイン
    ssh ga53pd01
 
-   # プロジェクトディレクトリに移動して、hornetをクローン
+   # プロジェクトディレクトリに移動
    cd /proj/tierivemu/work/<your_palladium_username>
 
-   # デフォルトブランチ（main）をクローン
-   git clone https://github.com/tier4/hornet.git
-
-   # または特定のブランチを指定してクローン
-   # git clone -b <branch_name> https://github.com/tier4/hornet.git
+   # hornetの特定ブランチをクローン
+   git clone -b <branch_name> https://github.com/tier4/hornet.git
 
    exit
    ```
 
-   **Claude Codeで自動実行** (推奨):
-   ```
-   「ga53pd01の /proj/tierivemu/work/<your_palladium_username>/ に
-   https://github.com/tier4/hornet.git のmainブランチをgit cloneして」
-
-   # 特定のブランチをクローンする場合:
-   「ga53pd01の /proj/tierivemu/work/<your_palladium_username>/ に
-   https://github.com/tier4/hornet.git の<branch_name>ブランチをgit cloneして」
-   ```
+   **重要**: ローカルとga53pd01で同じブランチを使用してください。
 
 2. **カスタムタスクスクリプトの作成**:
 
