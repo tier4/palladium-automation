@@ -392,42 +392,97 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    ./scripts/claude_to_ga53pd01.sh scripts/ga53pd01_example_task.sh
    ```
 
-3. **Hornet RTL開発ワークフロー**:
+3. **Hornet RTL開発ワークフロー（推奨）**:
 
    **ローカルhornetがメイン開発環境です。**
 
+   ### Claude Codeへの指示方法
+
+   Claude Codeに自然言語で指示することで、コミット・プッシュ・リモート実行を自動化できます。
+
+   #### 基本的な指示例
+
    ```
-   [ローカル] hornet/ でRTL解析・編集 (Serena MCP使用)
-      ↓
-   [ローカル] hornet/ で git commit & push
-      ↓
-   [自動] claude_to_ga53pd01.sh がローカルをチェック
-      ✓ 未コミット変更なし
-      ✓ 未プッシュコミットなし
-      ↓
-   [自動] ga53pd01で git pull実行
-      ↓
-   [自動] ブランチ・コミットの一致確認
-      ↓
-   [ga53pd01] Palladiumエミュレーション実行
-      ↓
-   [ローカル] 結果分析（ログ解析）
+   「hornetの変更をコミット＆プッシュして、ga53pd01でkv260ビルドを実行して」
    ```
 
-   **実行例**:
-   ```bash
-   # 1. ローカルでRTL編集（Claude Code + Serena MCP）
-   cd hornet
-   # Serena MCPでVerilogコードを解析・編集
-   git add src/modified_file.sv
-   git commit -m "fix: update ALU logic"
-   git push origin <branch_name>
+   **Claude Codeの実行フロー**:
 
-   # 2. スクリプト実行（git pullは自動で実行される）
-   ./scripts/claude_to_ga53pd01.sh scripts/ga53pd01_example_task.sh
-   # または Claude Codeに指示:
-   「ga53pd01でビルドを実行して」
+   1. **変更確認**
+      ```bash
+      cd hornet
+      git status
+      git diff
+      ```
+
+   2. **コミットメッセージ案の提示**
+      ```
+      以下の変更をコミットします：
+
+      変更されたファイル:
+      - src/alu.sv
+      - src/control.sv
+
+      コミットメッセージ案:
+      "fix: update ALU logic and control signals"
+
+      このメッセージでコミットしますか？
+      ```
+      ※ ユーザーが確認・修正可能
+
+   3. **コミット＆プッシュ実行**
+      ```bash
+      git add .
+      git commit -m "fix: update ALU logic and control signals"
+      git push
+      ```
+
+   4. **ga53pd01でビルド実行**
+      ```bash
+      cd /home/khenmi/palladium-automation
+      TARGET=kv260 ./scripts/claude_to_ga53pd01.sh ./scripts/ga53pd01_example_task.sh
+      ```
+
+   5. **claude_to_ga53pd01.shの自動処理**
+      - ローカルhornetのGit状態を検証
+        - ✓ 未コミット変更なし
+        - ✓ 未プッシュコミットなし
+        - ✓ upstream設定済み
+      - リモートhornetで`git pull`実行
+      - ローカルとリモートのブランチ・コミットが一致することを確認
+      - ga53pd01でビルドスクリプト実行
+
+   6. **結果の保存と表示**
+      ```
+      === タスクが正常に完了しました ===
+      結果を保存: workspace/etx_results/.archive/202511/...
+      出力: 25 行, 1.2K
+      ```
+
+   #### その他の指示例
+
+   **ターゲット指定**:
    ```
+   「hornetの変更をコミット＆プッシュして、ga53pd01でzcu102ビルドを実行して」
+   ```
+
+   **カスタムコミットメッセージ**:
+   ```
+   「hornetの変更を"feat: add new pipeline stage"でコミット＆プッシュして、ビルドして」
+   ```
+
+   **複数タスク**:
+   ```
+   「hornetの変更をコミット＆プッシュして、ga53pd01でビルドして、結果を分析して」
+   ```
+
+   ### メリット
+
+   - ✅ **コミットメッセージを毎回確認・修正できる**
+   - ✅ **意図しない変更がコミットされない**
+   - ✅ **適切なコミットメッセージが自動生成される**
+   - ✅ **柔軟に対応可能**（一部ファイルのみコミット等）
+   - ✅ **自然言語で直感的に指示できる**
 
    **自動Git同期機能**:
    - ✅ ローカルの未コミット/未プッシュを自動検出
