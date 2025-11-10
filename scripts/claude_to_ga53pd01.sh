@@ -183,33 +183,41 @@ main() {
     log_info "${REMOTE_HOST}のリモートhornetを同期中..."
 
     # リモートhornetを同期してGit情報を取得
-    local remote_git_output=$(ssh "${REMOTE_HOST}" 'bash -s' <<'SYNC_SCRIPT'
+    local remote_git_output=$( (ssh "${REMOTE_HOST}" 'bash -s' <<'SYNC_SCRIPT'
 HORNET_DIR="/proj/tierivemu/work/${USER}/hornet"
 
 if [ -d "${HORNET_DIR}/.git" ]; then
     cd "${HORNET_DIR}"
 
     # Pull latest changes
-    if git pull --quiet 2>&1; then
-        echo "INFO: Git pull successful" >&2
+    if git pull --quiet >/dev/null 2>&1; then
+        # Success (no output)
+        true
     else
-        echo "ERROR: Git pull failed" >&2
+        echo "ERROR=Git pull failed"
         exit 1
     fi
 
-    # Output Git info for local comparison (to stdout only)
+    # Output Git info for local comparison
     echo "REMOTE_BRANCH=$(git branch --show-current)"
     echo "REMOTE_COMMIT=$(git rev-parse HEAD)"
 else
-    echo "ERROR: Remote hornet is not a git repository: ${HORNET_DIR}" >&2
+    echo "ERROR=Remote hornet is not a git repository: ${HORNET_DIR}"
     exit 1
 fi
 SYNC_SCRIPT
-)
+) 2>&1 | grep -E '^(REMOTE_BRANCH|REMOTE_COMMIT|ERROR)=' )
 
     local sync_exit_code=$?
     if [ $sync_exit_code -ne 0 ]; then
         log_error "リモートhornetの同期に失敗しました"
+        exit 1
+    fi
+
+    # エラーチェック
+    if echo "$remote_git_output" | grep -q '^ERROR='; then
+        local error_msg=$(echo "$remote_git_output" | grep '^ERROR=' | cut -d'=' -f2-)
+        log_error "リモートエラー: $error_msg"
         exit 1
     fi
 
