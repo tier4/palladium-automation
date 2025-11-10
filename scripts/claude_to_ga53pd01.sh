@@ -1,22 +1,22 @@
 #!/bin/bash
-# SSH-based script execution on ga53pd01 with direct result retrieval
-# This script transfers and executes scripts via SSH synchronously
+# ga53pd01でのSSH経由スクリプト実行
+# ローカルとリモートのhornet Git同期を自動化
 
 set -e
 
-# Load environment variables from .env if it exists
+# 環境変数を.envから読み込み
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ENV_FILE="${PROJECT_ROOT}/.env"
 
 if [ -f "${ENV_FILE}" ]; then
-    # Source .env file, ignoring comments and empty lines
+    # .envファイルを読み込み（コメントと空行を除外）
     set -a
     source <(grep -v '^#' "${ENV_FILE}" | grep -v '^$')
     set +a
 fi
 
-# Configuration with defaults
+# デフォルト設定
 REMOTE_HOST="${REMOTE_HOST:-ga53pd01}"
 REMOTE_USER="${REMOTE_USER:-henmi}"
 PROJECT_NAME="${PROJECT_NAME:-tierivemu}"
@@ -47,32 +47,32 @@ log_debug() {
     fi
 }
 
-# Usage
+# 使用方法
 usage() {
     cat << EOF
-Usage: $0 <task_script>
+使用方法: $0 <task_script>
 
-Arguments:
-  task_script    Path to the bash script to execute on ga53pd01
+引数:
+  task_script    ga53pd01で実行するbashスクリプトのパス
 
-Environment Variables:
-  REMOTE_HOST    Target host (default: ga53pd01)
-  REMOTE_USER    SSH user (default: henmi)
-  DEBUG          Enable debug output (default: 0)
+環境変数:
+  REMOTE_HOST    対象ホスト (デフォルト: ga53pd01)
+  REMOTE_USER    SSHユーザー (デフォルト: henmi)
+  DEBUG          デバッグ出力を有効化 (デフォルト: 0)
 
-Example:
+実行例:
   $0 /tmp/my_task.sh
   DEBUG=1 $0 /tmp/my_task.sh
 
-Features:
-  - SSH synchronous execution (fast, real-time output)
-  - Local archive in .archive/YYYYMM/
-  - No remote files left behind
+機能:
+  - SSH同期実行（高速、リアルタイム出力）
+  - ローカルアーカイブに自動保存（.archive/YYYYMM/）
+  - リモートにファイルを残さない
 
 EOF
 }
 
-# Check local hornet Git status
+# ローカルhornetのGit状態をチェック
 check_local_hornet_git() {
     local hornet_path="${PROJECT_ROOT}/hornet"
 
@@ -84,69 +84,93 @@ check_local_hornet_git() {
     log_info "Checking local hornet Git status..."
     cd "${hornet_path}"
 
-    # Check for uncommitted changes
+    # 未コミット変更のチェック
     if [ -n "$(git status --porcelain)" ]; then
-        log_error "Local hornet has uncommitted changes!"
+        log_error "ローカルhornetに未コミットの変更があります！"
+        echo ""
         git status --short
-        log_error "Please commit or stash your changes before running on ga53pd01"
+        echo ""
+        log_error "【対処方法】以下のいずれかを実行してください："
+        log_error "  1. 変更をコミット: git add . && git commit -m 'your message'"
+        log_error "  2. 変更を一時退避: git stash"
+        log_error ""
+        log_error "説明: ga53pd01で実行する前に、ローカルの変更を確定する必要があります。"
         return 1
     fi
 
-    # Check for unpushed commits
+    # 未プッシュコミットのチェック
     git fetch origin --quiet 2>/dev/null || true
     local local_commit=$(git rev-parse HEAD)
     local remote_commit=$(git rev-parse @{u} 2>/dev/null)
+    local current_branch=$(git branch --show-current)
 
     if [ -z "$remote_commit" ]; then
-        log_warn "Local hornet branch has no upstream configured"
+        log_error "ローカルhornetブランチにupstream（追跡ブランチ）が設定されていません"
+        echo ""
+        log_error "【説明】"
+        log_error "  upstream = ローカルブランチが追跡するリモートブランチ"
+        log_error "  新しく作成したブランチは、まだリモートにpushされていないため"
+        log_error "  upstreamが設定されていません。"
+        echo ""
+        log_error "【対処方法】以下のコマンドでブランチをリモートにpushしてください："
+        log_error "  git push -u origin ${current_branch}"
+        echo ""
+        log_error "  -u オプション: upstreamを設定しながらpush"
+        log_error "  これ以降は 'git push' だけで自動的にこのブランチにpushされます"
+        return 1
     elif [ "$local_commit" != "$remote_commit" ]; then
-        log_error "Local hornet has unpushed commits!"
-        log_error "Local:  $local_commit"
-        log_error "Remote: $remote_commit"
-        log_error "Please push your commits before running on ga53pd01"
+        log_error "ローカルhornetに未プッシュのコミットがあります！"
+        echo ""
+        log_error "  ローカル:  $local_commit"
+        log_error "  リモート:  $remote_commit"
+        echo ""
+        log_error "【対処方法】以下のコマンドでコミットをpushしてください："
+        log_error "  git push"
+        echo ""
+        log_error "説明: ga53pd01で最新コードを使用するため、まずリモートにpushが必要です。"
         return 1
     fi
 
-    # Store local Git info for later comparison
+    # ローカルGit情報を保存（後でリモートと比較）
     LOCAL_BRANCH=$(git branch --show-current)
     LOCAL_COMMIT=$(git rev-parse HEAD)
 
-    log_info "Local hornet: branch=${LOCAL_BRANCH}, commit=${LOCAL_COMMIT:0:8}"
+    log_info "ローカルhornet: ブランチ=${LOCAL_BRANCH}, コミット=${LOCAL_COMMIT:0:8}"
 
     cd - > /dev/null
     return 0
 }
 
-# Main execution
+# メイン処理
 main() {
     local task_script="$1"
 
     if [ -z "$task_script" ]; then
-        log_error "No task script specified"
+        log_error "タスクスクリプトが指定されていません"
         usage
         exit 1
     fi
 
     if [ ! -f "$task_script" ]; then
-        log_error "Task script not found: $task_script"
+        log_error "タスクスクリプトが見つかりません: $task_script"
         exit 1
     fi
 
-    # Check local hornet Git status
+    # ローカルhornetのGit状態をチェック
     if ! check_local_hornet_git; then
-        log_error "Local hornet Git check failed. Aborting."
+        log_error "ローカルhornetのGitチェックに失敗しました。実行を中止します。"
         exit 1
     fi
 
-    # Generate task ID
+    # タスクID生成
     local timestamp=$(date +%Y%m%d_%H%M%S)
     local task_id="${USER}_${timestamp}"
     local task_name=$(basename "$task_script" .sh)
 
-    log_info "=== Running Task on ga53pd01: $task_name ==="
-    log_info "Task ID: $task_id"
-    log_info "Timestamp: $timestamp"
-    log_info "Execution mode: SSH Synchronous (real-time output)"
+    log_info "=== ga53pd01でタスクを実行: $task_name ==="
+    log_info "タスクID: $task_id"
+    log_info "タイムスタンプ: $timestamp"
+    log_info "実行モード: SSH同期実行（リアルタイム出力）"
 
     # Prepare local archive path
     local archive_month=$(date +%Y%m)
@@ -156,29 +180,28 @@ main() {
     # Create archive directory
     mkdir -p "$archive_path"
 
-    log_info "Syncing remote hornet on ${REMOTE_HOST}..."
+    log_info "${REMOTE_HOST}のリモートhornetを同期中..."
 
-    # Sync remote hornet and get Git info
-    local remote_git_info=$(ssh "${REMOTE_HOST}" 'bash -s' <<'SYNC_SCRIPT'
+    # リモートhornetを同期してGit情報を取得
+    local remote_git_output=$(ssh "${REMOTE_HOST}" 'bash -s' <<'SYNC_SCRIPT'
 HORNET_DIR="/proj/tierivemu/work/${USER}/hornet"
 
 if [ -d "${HORNET_DIR}/.git" ]; then
     cd "${HORNET_DIR}"
 
     # Pull latest changes
-    echo "INFO: Pulling latest changes..."
     if git pull --quiet 2>&1; then
-        echo "INFO: Git pull successful"
+        echo "INFO: Git pull successful" >&2
     else
-        echo "ERROR: Git pull failed"
+        echo "ERROR: Git pull failed" >&2
         exit 1
     fi
 
-    # Output Git info for local comparison
+    # Output Git info for local comparison (to stdout only)
     echo "REMOTE_BRANCH=$(git branch --show-current)"
     echo "REMOTE_COMMIT=$(git rev-parse HEAD)"
 else
-    echo "ERROR: Remote hornet is not a git repository: ${HORNET_DIR}"
+    echo "ERROR: Remote hornet is not a git repository: ${HORNET_DIR}" >&2
     exit 1
 fi
 SYNC_SCRIPT
@@ -186,60 +209,61 @@ SYNC_SCRIPT
 
     local sync_exit_code=$?
     if [ $sync_exit_code -ne 0 ]; then
-        log_error "Failed to sync remote hornet"
-        echo "$remote_git_info"
+        log_error "リモートhornetの同期に失敗しました"
         exit 1
     fi
 
-    # Parse remote Git info
-    eval "$remote_git_info"
-    log_info "Remote hornet: branch=${REMOTE_BRANCH}, commit=${REMOTE_COMMIT:0:8}"
+    log_info "リモートでのgit pull成功"
 
-    # Compare local and remote Git info
+    # リモートGit情報を解析
+    eval "$remote_git_output"
+    log_info "リモートhornet: ブランチ=${REMOTE_BRANCH}, コミット=${REMOTE_COMMIT:0:8}"
+
+    # ローカルとリモートのGit情報を比較
     if [ "$LOCAL_BRANCH" != "$REMOTE_BRANCH" ]; then
-        log_error "Branch mismatch!"
-        log_error "  Local:  $LOCAL_BRANCH"
-        log_error "  Remote: $REMOTE_BRANCH"
+        log_error "ブランチが一致しません！"
+        log_error "  ローカル:  $LOCAL_BRANCH"
+        log_error "  リモート:  $REMOTE_BRANCH"
         exit 1
     fi
 
     if [ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]; then
-        log_error "Commit mismatch!"
-        log_error "  Local:  $LOCAL_COMMIT"
-        log_error "  Remote: $REMOTE_COMMIT"
+        log_error "コミットが一致しません！"
+        log_error "  ローカル:  $LOCAL_COMMIT"
+        log_error "  リモート:  $REMOTE_COMMIT"
         exit 1
     fi
 
-    log_info "✓ Local and remote hornet are in sync"
+    log_info "✓ ローカルとリモートのhornetが同期されています"
     echo ""
 
-    log_info "Executing script on ${REMOTE_HOST}..."
-    log_info "Output will be saved to: $result_file"
+    log_info "${REMOTE_HOST}でスクリプトを実行中..."
+    log_info "出力先: $result_file"
     echo ""
 
-    # Execute via SSH and save to archive
+    # SSH経由で実行し、アーカイブに保存
     if ssh "${REMOTE_HOST}" "bash -s" < "$task_script" 2>&1 | tee "$result_file"; then
         echo ""
-        log_info "=== Task Completed Successfully ==="
-        log_info "Result archived: $result_file"
+        log_info "=== タスクが正常に完了しました ==="
+        log_info "結果を保存: $result_file"
 
-        # Show summary
+        # サマリー表示
         local line_count=$(wc -l < "$result_file")
         local file_size=$(du -h "$result_file" | cut -f1)
-        log_info "Output: $line_count lines, $file_size"
+        log_info "出力: $line_count 行, $file_size"
 
         return 0
     else
         local exit_code=$?
         echo ""
-        log_error "=== Task Failed ==="
-        log_error "Exit code: $exit_code"
-        log_warn "Partial result saved to: $result_file"
+        log_error "=== タスクが失敗しました ==="
+        log_error "終了コード: $exit_code"
+        log_warn "部分的な結果を保存: $result_file"
         return $exit_code
     fi
 }
 
-# Entry point
+# エントリーポイント
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
     usage
     exit 0
