@@ -379,18 +379,28 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    https://github.com/tier4/hornet.git の<branch_name>ブランチをgit cloneして」
    ```
 
-2. **実際のタスクを実行**:
+2. **カスタムタスクスクリプトの作成**:
 
-   サンプルビルドスクリプトをテンプレートとして使用できます：
+   **重要**: サンプルスクリプト（`ga53pd01_example_task.sh`）は直接編集せず、コピーして使用してください。
+
    ```bash
-   # サンプルスクリプトを確認・編集
-   cat scripts/ga53pd01_example_task.sh
-   # 必要に応じてプロジェクトパスを編集
-   vi scripts/ga53pd01_example_task.sh
+   # サンプルスクリプトをコピーして、自分用のスクリプトを作成
+   cp scripts/ga53pd01_example_task.sh scripts/ga53pd01_task.sh
+
+   # 必要に応じて編集（ターゲット、パス等）
+   vi scripts/ga53pd01_task.sh
 
    # 実行
-   ./scripts/claude_to_ga53pd01.sh scripts/ga53pd01_example_task.sh
+   ./scripts/claude_to_ga53pd01.sh scripts/ga53pd01_task.sh
    ```
+
+   **理由**:
+   - ✅ `git pull`時にコンフリクトしない
+   - ✅ サンプルは常に最新版に更新される
+   - ✅ ユーザー固有の設定を保持できる
+   - ✅ 複数のタスクスクリプトを作成できる
+
+   **注意**: `scripts/*_task.sh`は`.gitignore`に含まれており、Git管理対象外です。
 
 3. **Hornet RTL開発ワークフロー（推奨）**:
 
@@ -440,8 +450,9 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    4. **ga53pd01でビルド実行**
       ```bash
       cd /home/khenmi/palladium-automation
-      TARGET=kv260 ./scripts/claude_to_ga53pd01.sh ./scripts/ga53pd01_example_task.sh
+      TARGET=kv260 ./scripts/claude_to_ga53pd01.sh ./scripts/ga53pd01_task.sh
       ```
+      ※ 事前に`scripts/ga53pd01_task.sh`を作成しておく必要があります
 
    5. **claude_to_ga53pd01.shの自動処理**
       - ローカルhornetのGit状態を検証
@@ -450,7 +461,7 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
         - ✓ upstream設定済み
       - リモートhornetで`git pull`実行
       - ローカルとリモートのブランチ・コミットが一致することを確認
-      - ga53pd01でビルドスクリプト実行
+      - ga53pd01で`scripts/ga53pd01_task.sh`実行
 
    6. **結果の保存と表示**
       ```

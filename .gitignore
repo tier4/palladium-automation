@@ -44,6 +44,12 @@ mcp-servers/*/node_modules/
 .env.local
 .env.*.local
 
+# ユーザー固有のタスクスクリプト
+# ga53pd01_example_task.sh をコピーして作成したカスタムスクリプト
+scripts/ga53pd01_task.sh
+scripts/*_task.sh
+!scripts/ga53pd01_example_task.sh
+
 # IDE設定
 .vscode/
 .idea/

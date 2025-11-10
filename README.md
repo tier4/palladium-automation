@@ -189,14 +189,37 @@ ssh ga53pd01 'hostname'
 
 ## 使用方法
 
+### 初回セットアップ: カスタムタスクスクリプトの作成
+
+**重要**: サンプルスクリプト（`ga53pd01_example_task.sh`）は直接編集せず、コピーして使用してください。
+
+```bash
+# サンプルスクリプトをコピーして、自分用のスクリプトを作成
+cp scripts/ga53pd01_example_task.sh scripts/ga53pd01_task.sh
+
+# 必要に応じて編集（ターゲット、パス等）
+vi scripts/ga53pd01_task.sh
+```
+
+**理由**:
+- ✅ `git pull`時にコンフリクトしない
+- ✅ サンプルは常に最新版に更新される
+- ✅ ユーザー固有の設定を保持できる
+- ✅ 複数のタスクスクリプトを作成できる
+
+**注意**: `scripts/*_task.sh`は`.gitignore`に含まれており、Git管理対象外です。
+
 ### SSH統合スクリプト（推奨）
 
 ```bash
 # ga53pd01でスクリプトを実行（SSH同期実行）
-./scripts/claude_to_ga53pd01.sh /path/to/task_script.sh
+./scripts/claude_to_ga53pd01.sh scripts/ga53pd01_task.sh
 
 # デバッグモード
-DEBUG=1 ./scripts/claude_to_ga53pd01.sh /path/to/task_script.sh
+DEBUG=1 ./scripts/claude_to_ga53pd01.sh scripts/ga53pd01_task.sh
+
+# ターゲット指定
+TARGET=zcu102 ./scripts/claude_to_ga53pd01.sh scripts/ga53pd01_task.sh
 ```
 
 **特徴**:
@@ -204,20 +227,6 @@ DEBUG=1 ./scripts/claude_to_ga53pd01.sh /path/to/task_script.sh
 - リアルタイムで出力表示
 - ローカルアーカイブに自動保存（`.archive/YYYYMM/`）
 - リモートにファイルを残さない
-
-**実行例**:
-```bash
-# 簡単なテストスクリプトを作成
-cat > /tmp/test.sh << 'EOF'
-#!/bin/bash
-echo "Hostname: $(hostname)"
-echo "Date: $(date)"
-echo "User: $(whoami)"
-EOF
-
-# 実行
-./scripts/claude_to_ga53pd01.sh /tmp/test.sh
-```
 
 ### Claude Codeによる自動化（推奨）
 
@@ -238,8 +247,10 @@ Claude Codeに自然言語で指示することで、コミット・プッシュ
    - ✓ 未コミット変更なし
    - ✓ 未プッシュコミットなし
    - ✓ upstream設定済み
-5. **リモート実行** - ga53pd01で`git pull` → ビルド実行
+5. **リモート実行** - ga53pd01で`git pull` → `scripts/ga53pd01_task.sh`実行
 6. **結果保存** - ローカルアーカイブに自動保存
+
+**注意**: `scripts/ga53pd01_task.sh`を事前に作成しておく必要があります（上記「初回セットアップ」参照）。
 
 #### その他の指示例
 
