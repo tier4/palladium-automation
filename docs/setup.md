@@ -163,22 +163,7 @@ git clone https://github.com/tier4/palladium-automation.git
 cd palladium-automation
 ```
 
-### 2. 環境変数の設定
-
-```bash
-# .env.exampleをコピーして自分の環境に合わせて編集
-cp .env.example .env
-vi .env
-```
-
-**設定内容** (`.env` ファイル):
-```bash
-REMOTE_USER=your_palladium_username     # 自分のPalladiumユーザー名
-```
-
-**注意**: 他の設定項目（`REMOTE_HOST`、`PROJECT_NAME`、`BASTION_HOST`等）はデフォルト値で動作するため、通常は変更不要です。
-
-### 3. Palladium対象プロジェクト（Hornet RTL）のクローン
+### 2. Palladium対象プロジェクト（Hornet RTL）のクローン
 
 ```bash
 # palladium-automation内にhornetをクローン（デフォルトブランチ: main）
@@ -197,14 +182,14 @@ ls -la hornet/
 - **ローカルとga53pd01のhornetは同じブランチを使用してください**（後述の「次のステップ」でga53pd01にもクローンします）
 
 
-### 4. アーカイブディレクトリの作成
+### 3. アーカイブディレクトリの作成
 
 ```bash
 # 結果保存用ディレクトリの作成
 mkdir -p workspace/etx_results/.archive
 ```
 
-### 5. ディレクトリ構造の確認
+### 4. ディレクトリ構造の確認
 
 ```bash
 ls -la
@@ -220,20 +205,20 @@ palladium-automation/
 │   └── etx_results/
 │       └── .archive/            # ローカル結果アーカイブ
 ├── hornet/                      # Hornet RTLプロジェクト（git clone）
-├── .env                         # 環境設定ファイル（要作成）
-├── .env.example                 # 環境設定テンプレート
 ├── docs/
 ├── CLAUDE.md
 └── README.md
 ```
 
-### 6. スクリプトの実行権限確認
+**注意**: 環境設定は不要です。`~/.ssh/config`から自動的にユーザー情報を取得します。
+
+### 5. スクリプトの実行権限確認
 
 ```bash
 chmod +x scripts/claude_to_ga53pd01.sh
 ```
 
-### 7. MCP設定
+### 6. MCP設定
 
 **注意**: MCPサーバーは各自の環境でインストールが必要です。
 
@@ -515,7 +500,6 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    ```
 
    **自動的に保護されるファイル**:
-   - `.env` - あなたの環境設定
    - `scripts/*_task.sh` - カスタムタスクスクリプト
    - `workspace/etx_results/.archive/` - 実行結果
    - `hornet/` - cloneしたリポジトリ

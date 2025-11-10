@@ -4,21 +4,26 @@
 
 set -e
 
-# 環境変数を.envから読み込み
+# プロジェクトルートの取得
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-ENV_FILE="${PROJECT_ROOT}/.env"
 
-if [ -f "${ENV_FILE}" ]; then
-    # .envファイルを読み込み（コメントと空行を除外）
-    set -a
-    source <(grep -v '^#' "${ENV_FILE}" | grep -v '^$')
-    set +a
-fi
+# ~/.ssh/configからREMOTE_USERを取得
+get_ssh_user() {
+    local host="$1"
+    # ssh -Gで実際の設定値を取得（Host設定を含む）
+    local user=$(ssh -G "${host}" 2>/dev/null | grep "^user " | head -1 | awk '{print $2}')
+    if [ -n "$user" ] && [ "$user" != "$(whoami)" ]; then
+        echo "$user"
+    else
+        # デフォルトは現在のユーザー
+        whoami
+    fi
+}
 
 # デフォルト設定
 REMOTE_HOST="${REMOTE_HOST:-ga53pd01}"
-REMOTE_USER="${REMOTE_USER:-henmi}"
+REMOTE_USER="${REMOTE_USER:-$(get_ssh_user ${REMOTE_HOST})}"
 PROJECT_NAME="${PROJECT_NAME:-tierivemu}"
 ARCHIVE_DIR="workspace/etx_results/.archive"
 
@@ -57,7 +62,7 @@ usage() {
 
 環境変数:
   REMOTE_HOST    対象ホスト (デフォルト: ga53pd01)
-  REMOTE_USER    SSHユーザー (デフォルト: henmi)
+  REMOTE_USER    SSHユーザー (デフォルト: ~/.ssh/configから自動取得)
   DEBUG          デバッグ出力を有効化 (デフォルト: 0)
 
 実行例:

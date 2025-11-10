@@ -123,32 +123,14 @@ git clone https://github.com/tier4/palladium-automation.git
 cd palladium-automation
 ```
 
-### 3. 環境変数の設定
-
-```bash
-# .env.exampleをコピーして自分の環境に合わせて編集
-cp .env.example .env
-nano .env
-```
-
-**設定例**:
-```bash
-REMOTE_HOST=ga53pd01
-REMOTE_USER=your_username
-PROJECT_NAME=your_project_name
-BASTION_HOST=10.108.64.1
-```
-
-**重要**: `.env` ファイルはGit管理対象外なので、各自の環境に合わせて設定してください。
-
-### 4. Hornetプロジェクトのクローン
+### 3. Hornetプロジェクトのクローン
 
 ```bash
 # palladium-automation内にhornetをクローン
 git clone https://github.com/tier4/hornet.git
 ```
 
-### 5. MCP設定（オプション）
+### 4. MCP設定（オプション）
 
 このプロジェクトでは以下のMCPサーバーを利用できます。各自の環境で必要に応じてインストールしてください。
 
@@ -177,7 +159,7 @@ Cadence Supportサイトのドキュメント参照が必要な場合：
 
 **機能**: Palladium/IXCOMドキュメントの検索・閲覧の自動化
 
-### 6. 接続テスト
+### 5. 接続テスト
 
 ```bash
 # ga53pd01への接続確認
@@ -199,13 +181,13 @@ git pull origin main
 ```
 
 **理由**:
-- ✅ ユーザー固有のファイル（`.env`, `scripts/*_task.sh`）は`.gitignore`で保護済み
+- ✅ ユーザー固有のファイル（`scripts/*_task.sh`）は`.gitignore`で保護済み
 - ✅ `git pull`だけで最新の機能・バグ修正を自動取得
 - ✅ コンフリクトの心配なし
 - ✅ シンプルで管理が容易
+- ✅ SSH設定（`~/.ssh/config`）から自動的にユーザー情報を取得
 
 **保護されているファイル** (Git管理対象外):
-- `.env` - 環境設定
 - `scripts/*_task.sh` - カスタムタスクスクリプト
 - `workspace/etx_results/.archive/` - 実行結果
 - `hornet/` - cloneしたリポジトリ
