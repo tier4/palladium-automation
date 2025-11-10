@@ -268,12 +268,6 @@ Claude Codeに自然言語で指示することで、コミット・プッシュ
 
 詳細は [docs/setup.md](docs/setup.md) の「Hornet RTL開発ワークフロー」を参照してください。
 
-### レガシースクリプト（参考）
-
-xdotoolベースのGUI自動操作スクリプトは `scripts/.legacy/` に移動されました。
-
-詳細は [scripts/.legacy/README.md](scripts/.legacy/README.md) を参照してください。
-
 ## トラブルシューティング
 
 ### SSH接続エラー
