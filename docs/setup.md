@@ -501,7 +501,49 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    - ✅ ブランチ・コミットの一致を自動確認
    - ✅ 不一致時は実行を中止して警告
 
-4. **Claude Code実用プロンプト例**:
+4. **プロジェクトの更新管理**:
+
+   **mainブランチをそのまま使用してください（推奨）**
+
+   このプロジェクトは、ユーザー固有のファイルを`.gitignore`で保護しているため、
+   mainブランチで直接作業してもコンフリクトしません。
+
+   ```bash
+   # 定期的に最新版を取得
+   cd ~/palladium-automation
+   git pull origin main
+   ```
+
+   **自動的に保護されるファイル**:
+   - `.env` - あなたの環境設定
+   - `scripts/*_task.sh` - カスタムタスクスクリプト
+   - `workspace/etx_results/.archive/` - 実行結果
+   - `hornet/` - cloneしたリポジトリ
+
+   **メリット**:
+   - ✅ 最新の機能・バグ修正を自動取得
+   - ✅ コンフリクトなし
+   - ✅ シンプルな管理
+
+   **独自ブランチが必要なケース**:
+
+   以下の場合のみ、独自ブランチの作成を検討してください：
+   - プロジェクト本体のスクリプト（`claude_to_ga53pd01.sh`等）を修正する必要がある
+   - チーム固有の機能追加が必要
+   - mainの更新を選択的に取り込みたい
+
+   ```bash
+   # 独自ブランチ作成
+   git checkout -b custom/your-team-name
+
+   # カスタマイズ
+
+   # mainの更新を取り込む
+   git fetch origin
+   git merge origin/main  # コンフリクト解決が必要な場合あり
+   ```
+
+5. **Claude Code実用プロンプト例**:
 
    以下のようにClaude Codeに自然言語で指示することで、様々なタスクを自動実行できます。
 

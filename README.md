@@ -187,6 +187,48 @@ ssh ga53pd01 'hostname'
 
 これでセットアップ完了です！詳細な手順は [docs/setup.md](docs/setup.md) を参照してください。
 
+## ブランチ戦略
+
+### 推奨: mainブランチをそのまま使用
+
+**このプロジェクトはmainブランチで直接使用することを推奨します。**
+
+```bash
+# 最新版の取得（定期的に実行）
+git pull origin main
+```
+
+**理由**:
+- ✅ ユーザー固有のファイル（`.env`, `scripts/*_task.sh`）は`.gitignore`で保護済み
+- ✅ `git pull`だけで最新の機能・バグ修正を自動取得
+- ✅ コンフリクトの心配なし
+- ✅ シンプルで管理が容易
+
+**保護されているファイル** (Git管理対象外):
+- `.env` - 環境設定
+- `scripts/*_task.sh` - カスタムタスクスクリプト
+- `workspace/etx_results/.archive/` - 実行結果
+- `hornet/` - cloneしたリポジトリ
+
+### 独自ブランチが必要なケース
+
+以下の場合のみ、独自ブランチの作成を検討してください：
+
+- プロジェクト本体のスクリプト（`claude_to_ga53pd01.sh`等）を修正する必要がある
+- チーム固有の機能追加が必要
+- mainの更新を選択的に取り込みたい
+
+```bash
+# 独自ブランチ作成
+git checkout -b custom/your-team-name
+
+# カスタマイズ後、mainの更新を取り込む
+git fetch origin
+git merge origin/main
+```
+
+**注意**: コンフリクト解決が必要になる場合があります。
+
 ## 使用方法
 
 ### 初回セットアップ: カスタムタスクスクリプトの作成
