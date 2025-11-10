@@ -1,51 +1,26 @@
 #!/bin/bash
-# Example build task script for ga53pd01
-# This is a template - modify paths and commands for your actual project
+# ga53pd01でのビルドタスク例
+# 注意: claude_to_ga53pd01.shが自動的にGit同期を行うため、
+#       このスクリプトではビルドコマンドのみを記述します。
 
-# Example: Building a project on ga53pd01
-echo "=== Build Task Started ==="
-echo "Date: $(date)"
-echo "User: $(whoami)"
-echo "Hostname: $(hostname)"
+set -e  # エラーで即座に終了
+
+echo "=== ビルドタスク開始 ==="
+echo "日付: $(date)"
+echo "ホスト: $(hostname)"
 echo ""
 
-# Navigate to your project directory (modify this path)
+# プロジェクトディレクトリに移動
 PROJECT_DIR="/proj/tierivemu/work/${USER}/hornet"
-echo "Project directory: ${PROJECT_DIR}"
+cd "${PROJECT_DIR}" || exit 1
 
-# Check if directory exists
-if [ -d "${PROJECT_DIR}" ]; then
-    cd "${PROJECT_DIR}"
-    echo "Changed to project directory: $(pwd)"
-
-    # Display Git information for reference
-    echo ""
-    echo "=== Git Information ==="
-    if [ -d .git ]; then
-        echo "Branch: $(git branch --show-current)"
-        echo "Commit: $(git log -1 --oneline)"
-        echo "Status: $(git status --porcelain | wc -l) uncommitted files"
-    else
-        echo "WARNING: Not a git repository"
-    fi
-    echo "======================="
-
-    # Example build commands (modify as needed)
-    echo ""
-    echo "Running make clean..."
-    make clean
-
-    echo ""
-    echo "Running make all..."
-    make all
-
-    echo ""
-    echo "Build completed successfully"
-else
-    echo "ERROR: Project directory not found: ${PROJECT_DIR}"
-    echo "Please modify the PROJECT_DIR variable in this script"
-    exit 1
-fi
+# ビルドコマンド（必要に応じて修正）
+echo "make clean を実行中..."
+make clean
 
 echo ""
-echo "=== Build Task Complete ==="
+echo "make all を実行中..."
+make all
+
+echo ""
+echo "=== ビルド完了 ==="
