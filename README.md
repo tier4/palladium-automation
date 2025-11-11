@@ -44,7 +44,7 @@ Cadenceのポリシーにより、**Palladiumエミュレーション環境（�
 
 - ✅ **Hornet統合**: hornetプロジェクトをgit cloneで組み込み
 - ✅ **Serena MCP**: Verilog/SystemVerilogのシンボルベース解析
-- ✅ **自動Git同期**: ローカルとga53pd01のhornetを自動同期・検証
+- ✅ **自動Git同期（オプション）**: ローカルとga53pd01のhornetを自動同期・検証
 - ✅ **SSH同期実行方式**: 高速（2-3秒）・シンプル・GUI操作不要
 - ✅ **リアルタイム出力**: 実行中の出力をその場で確認
 - ✅ **ローカルアーカイブ**: `.archive/YYYYMM/` に自動保存
@@ -130,36 +130,7 @@ cd palladium-automation
 git clone https://github.com/tier4/hornet.git
 ```
 
-### 4. MCP設定（オプション）
-
-MCPサーバーを使用すると、RTL解析やドキュメント参照が可能になります。
-
-**注意**: MCPサーバーは`palladium-automation`ディレクトリで実行してください。
-
-```bash
-cd ~/palladium-automation
-```
-
-#### Serena MCP - Verilog/SystemVerilog解析（オプション）
-
-```bash
-claude-serena
-# または手動で ~/.claude.json に設定
-```
-
-**機能**: hornetプロジェクトのVerilog/SystemVerilogコードのシンボルベース解析
-
-詳細は [docs/setup.md](docs/setup.md) を参照してください。
-
-#### Playwright MCP - ブラウザ自動化（オプション）
-
-```bash
-claude mcp add playwright npx @playwright/mcp@latest
-```
-
-**機能**: Palladium/IXCOMドキュメントの検索・閲覧の自動化
-
-### 5. 接続テスト
+### 4. 接続テスト
 
 ```bash
 # ga53pd01への接続確認
@@ -167,7 +138,13 @@ ssh ga53pd01 'hostname'
 # 出力: ga53pd01
 ```
 
-これでセットアップ完了です！詳細な手順は [docs/setup.md](docs/setup.md) を参照してください。
+**これでセットアップ完了です！**
+
+詳細な手順は [docs/setup.md](docs/setup.md) を参照してください。
+
+### オプション機能
+
+オプション機能（Git同期・MCP設定）については [docs/optional_features.md](docs/optional_features.md) を参照してください。
 
 ## ブランチ戦略
 

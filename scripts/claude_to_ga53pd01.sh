@@ -21,6 +21,18 @@ get_ssh_user() {
     fi
 }
 
+# .envファイルからGIT_SYNC設定を読み込み（オプション）
+GIT_SYNC="0"  # デフォルト: 無効
+ENV_FILE="${PROJECT_ROOT}/.env"
+if [ -f "${ENV_FILE}" ]; then
+    # GIT_SYNCの値を取得（大文字小文字区別なし）
+    git_sync_value=$(grep -i "^GIT_SYNC=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d ' "' | tr '[:upper:]' '[:lower:]')
+    if [ "$git_sync_value" = "true" ]; then
+        GIT_SYNC="1"
+        log_debug "Git同期が有効化されました (.env: GIT_SYNC=true)"
+    fi
+fi
+
 # デフォルト設定
 REMOTE_HOST="${REMOTE_HOST:-ga53pd01}"
 REMOTE_USER="${REMOTE_USER:-$(get_ssh_user ${REMOTE_HOST})}"
@@ -161,10 +173,18 @@ main() {
         exit 1
     fi
 
-    # ローカルhornetのGit状態をチェック
-    if ! check_local_hornet_git; then
-        log_error "ローカルhornetのGitチェックに失敗しました。実行を中止します。"
-        exit 1
+    # Git同期が有効な場合のみチェック
+    if [ "${GIT_SYNC}" = "1" ]; then
+        # ローカルhornetのGit状態をチェック
+        if ! check_local_hornet_git; then
+            log_error "ローカルhornetのGitチェックに失敗しました。実行を中止します。"
+            exit 1
+        fi
+    else
+        log_warn "Git同期はスキップされます（有効化するには.envにGIT_SYNC=trueを設定）"
+        # Git同期なしの場合、ローカル情報は取得しない
+        LOCAL_BRANCH=""
+        LOCAL_COMMIT=""
     fi
 
     # タスクID生成
@@ -185,10 +205,12 @@ main() {
     # Create archive directory
     mkdir -p "$archive_path"
 
-    log_info "${REMOTE_HOST}のリモートhornetを同期中..."
+    # Git同期が有効な場合のみリモート同期を実行
+    if [ "${GIT_SYNC}" = "1" ]; then
+        log_info "${REMOTE_HOST}のリモートhornetを同期中..."
 
-    # リモートhornetを同期してGit情報を取得
-    local remote_git_output=$( (ssh "${REMOTE_HOST}" 'bash -s' <<'SYNC_SCRIPT'
+        # リモートhornetを同期してGit情報を取得
+        local remote_git_output=$( (ssh "${REMOTE_HOST}" 'bash -s' <<'SYNC_SCRIPT'
 HORNET_DIR="/proj/tierivemu/work/${USER}/hornet"
 
 if [ -d "${HORNET_DIR}/.git" ]; then
@@ -213,42 +235,43 @@ fi
 SYNC_SCRIPT
 ) 2>&1 | grep -E '^(REMOTE_BRANCH|REMOTE_COMMIT|ERROR)=' )
 
-    local sync_exit_code=$?
-    if [ $sync_exit_code -ne 0 ]; then
-        log_error "リモートhornetの同期に失敗しました"
-        exit 1
+        local sync_exit_code=$?
+        if [ $sync_exit_code -ne 0 ]; then
+            log_error "リモートhornetの同期に失敗しました"
+            exit 1
+        fi
+
+        # エラーチェック
+        if echo "$remote_git_output" | grep -q '^ERROR='; then
+            local error_msg=$(echo "$remote_git_output" | grep '^ERROR=' | cut -d'=' -f2-)
+            log_error "リモートエラー: $error_msg"
+            exit 1
+        fi
+
+        log_info "リモートでのgit pull成功"
+
+        # リモートGit情報を解析
+        eval "$remote_git_output"
+        log_info "リモートhornet: ブランチ=${REMOTE_BRANCH}, コミット=${REMOTE_COMMIT:0:8}"
+
+        # ローカルとリモートのGit情報を比較
+        if [ "$LOCAL_BRANCH" != "$REMOTE_BRANCH" ]; then
+            log_error "ブランチが一致しません！"
+            log_error "  ローカル:  $LOCAL_BRANCH"
+            log_error "  リモート:  $REMOTE_BRANCH"
+            exit 1
+        fi
+
+        if [ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]; then
+            log_error "コミットが一致しません！"
+            log_error "  ローカル:  $LOCAL_COMMIT"
+            log_error "  リモート:  $REMOTE_COMMIT"
+            exit 1
+        fi
+
+        log_info "✓ ローカルとリモートのhornetが同期されています"
+        echo ""
     fi
-
-    # エラーチェック
-    if echo "$remote_git_output" | grep -q '^ERROR='; then
-        local error_msg=$(echo "$remote_git_output" | grep '^ERROR=' | cut -d'=' -f2-)
-        log_error "リモートエラー: $error_msg"
-        exit 1
-    fi
-
-    log_info "リモートでのgit pull成功"
-
-    # リモートGit情報を解析
-    eval "$remote_git_output"
-    log_info "リモートhornet: ブランチ=${REMOTE_BRANCH}, コミット=${REMOTE_COMMIT:0:8}"
-
-    # ローカルとリモートのGit情報を比較
-    if [ "$LOCAL_BRANCH" != "$REMOTE_BRANCH" ]; then
-        log_error "ブランチが一致しません！"
-        log_error "  ローカル:  $LOCAL_BRANCH"
-        log_error "  リモート:  $REMOTE_BRANCH"
-        exit 1
-    fi
-
-    if [ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]; then
-        log_error "コミットが一致しません！"
-        log_error "  ローカル:  $LOCAL_COMMIT"
-        log_error "  リモート:  $REMOTE_COMMIT"
-        exit 1
-    fi
-
-    log_info "✓ ローカルとリモートのhornetが同期されています"
-    echo ""
 
     log_info "${REMOTE_HOST}でスクリプトを実行中..."
     log_info "出力先: $result_file"

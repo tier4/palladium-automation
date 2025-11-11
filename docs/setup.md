@@ -1,15 +1,14 @@
-# palladium-automation セットアップガイド
+# palladium-automation 基本機能セットアップガイド
 
 このガイドでは、**palladium-automationプロジェクトをgit cloneしてから、Claude Codeで使用できるようにするまでの手順**を説明します。
 
 ## セットアップ完了後にClaude Codeでできること
 
-- ✅ **Hornet RTL解析**: Verilog/SystemVerilogのシンボルベース解析・編集（Serena MCP）
-- ✅ **自動Git同期**: ローカルとga53pd01のhornetを自動同期・検証
+### 基本機能
+
 - ✅ **リモート実行**: SSH経由でga53pd01のビルド・シミュレーションを自然言語で指示
 - ✅ **リアルタイム出力**: 実行中の出力を即座に確認（2-3秒オーバーヘッド）
 - ✅ **結果分析**: ログファイルのエラー解析・レポート生成
-- ✅ **ドキュメント参照**: Palladium/IXCOMマニュアルの自動検索・閲覧（Playwright MCP）
 - ✅ **ワークフロー自動化**: 「コミット→プッシュ→ビルド→結果分析」を一度の指示で実行
 
 ## 重要: プロジェクト内完結の原則
@@ -220,65 +219,7 @@ palladium-automation/
 chmod +x scripts/claude_to_ga53pd01.sh
 ```
 
-### 6. MCP設定（オプション）
-
-MCPサーバーを使用すると、RTL解析やドキュメント参照が可能になります。
-
-**注意**: MCPサーバーは`palladium-automation`ディレクトリで実行してください。
-~ 直下にpalladium-automationを入れた場合、
-```bash
-cd ~/palladium-automation
-```
-
-#### Serena MCP - Verilog/SystemVerilog解析（オプション）
-
-RTL解析機能が使えるようになります。
-
-**前提条件**: `~/.bashrc` に以下の設定が必要です：
-
-```bash
-# Verible（Verilog言語サーバー）のロード
-module load verible >/dev/null 2>&1
-
-# claude-serenaエイリアスの設定
-alias claude-serena='claude mcp add serena -- /opt/eda/uv/current/bin/uv run --directory /opt/eda/serena-verilog/current/ serena start-mcp-server --context ide-assistant --project $(pwd) --enable-web-dashboard false'
-```
-
-**インストール手順**:
-
-```bash
-# 1. 上記の設定を ~/.bashrc に追加（まだの場合）
-vi ~/.bashrc
-
-# 2. .bashrcを再読み込み
-source ~/.bashrc
-
-# 3. palladium-automationディレクトリでインストール
-cd ~/palladium-automation
-claude-serena
-```
-
-**提供機能**:
-- hornetプロジェクトのVerilog/SystemVerilogコード解析
-- シンボルベース検索（モジュール、関数等）
-- RTLコードの構造解析
-
-#### Playwright MCP - ブラウザ自動化（オプション）
-
-Cadence Supportサイトのドキュメント参照ができるようにします。
-
-**インストール手順**:
-
-```bash
-# palladium-automationディレクトリでインストール
-cd ~/palladium-automation
-claude mcp add playwright npx @playwright/mcp@latest
-```
-
-**提供機能**:
-- Cadence Support Portalへのアクセス
-- Palladium/IXCOMなどのドキュメントの検索・閲覧自動化
-- スクリーンショット取得
+**これで基本セットアップは完了です！**
 
 ---
 
@@ -483,15 +424,9 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    - ✅ **柔軟に対応可能**（一部ファイルのみコミット等）
    - ✅ **自然言語で直感的に指示できる**
 
-   **自動Git同期機能**:
-   - ✅ ローカルの未コミット/未プッシュを自動検出
-   - ✅ ga53pd01で自動git pull実行
-   - ✅ ブランチ・コミットの一致を自動確認
-   - ✅ 不一致時は実行を中止して警告
-
 4. **プロジェクトの更新管理**:
 
-   **mainブランチをそのまま使用してください（推奨）**
+   **palladium-automationは mainブランチをそのまま使用してください（推奨）**
 
    このプロジェクトは、ユーザー固有のファイルを`.gitignore`で保護しているため、
    mainブランチで直接作業してもコンフリクトしません。
@@ -543,30 +478,6 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    「ga53pd01でPalladiumエミュレーションを開始して、ログを監視して」
    ```
 
-   **RTL解析・修正** (Serena MCP使用):
-   ```
-   「hornetのt4_hornet_topモジュールを解析して、ALUの接続を確認して」
-
-   「hornet/src/alu.svのビット幅エラーを修正して、commit & pushして」
-
-   「hornetのクロックドメイン構成を調べて、CDC (Clock Domain Crossing) を確認して」
-
-   「hornet内の未使用信号を検索して、リストアップして」
-
-   「hornetのメモリインターフェース部分のコードを読んで、動作を説明して」
-
-   「ga53pd01でgit pullしてから、修正したコードでビルドして」
-   ```
-
-   **RTLリファクタリング** (Serena MCP使用):
-   ```
-   「hornetの重複コードを見つけて、共通モジュールに抽出して」
-
-   「モジュール名を "old_alu" から "new_alu" に一括リネームして」
-
-   「未使用のパラメータを削除して、コードを整理して」
-   ```
-
    **ログ解析・デバッグ**:
    ```
    「最新のシミュレーションログからエラーを抽出して、原因を分析して」
@@ -583,26 +494,6 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    「regression testを実行して、前回との差分を報告して」
 
    「特定のテストケースだけ再実行して、詳細なログを取得して」
-   ```
-
-   **画面キャプチャと分析** (Playwright MCP使用):
-   ```
-   「ga53pd01のGUIアプリをキャプチャして、表示内容を分析して」
-
-   「Palladium Design Perspectiveの画面をキャプチャして、エラー表示がないか確認して」
-
-   「シミュレーション実行中の画面を定期的にキャプチャして、進行状況を監視して」
-   ```
-
-   **Cadenceマニュアル参照** (Playwright MCP使用):
-   ```
-   「Cadence SupportサイトでPalladiumのエラーコード "XYZ123" を調べて」
-
-   「IXCOMのコマンドリファレンスで "emulate -accel" オプションの使い方を教えて」
-
-   「Xceliumの最新リリースノートを確認して、バグ修正一覧を教えて」
-
-   「Palladium Z3のパフォーマンスチューニングガイドを検索して、推奨設定を教えて」
    ```
 
 ---
@@ -689,6 +580,8 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
    ```
 
 ---
+
+オプション機能（Git同期・MCP設定）については [docs/optional_features.md](optional_features.md) を参照してください。
 
 ## 参考資料
 

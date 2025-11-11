@@ -3,6 +3,11 @@
 !.claude/etx_tasks/.gitkeep
 .claude/settings.local.json
 
+# 環境変数ファイル（Git同期設定等）
+.env
+.env.local
+.env.*.local
+
 # Playwright MCP cache
 .playwright-mcp/
 

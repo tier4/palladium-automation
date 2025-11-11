@@ -65,9 +65,13 @@ git push origin <branch_name>
 「ga53pd01でビルドを実行して」
 ```
 
-### 自動Git同期機能
+### 自動Git同期機能（オプション）
 
-`claude_to_ga53pd01.sh`は以下を自動的に実行します：
+**デフォルト**: Git同期は無効（.envファイルが無い場合）
+
+**有効化**: `.env`ファイルに`GIT_SYNC=true`を設定
+
+Git同期が有効な場合、`claude_to_ga53pd01.sh`は以下を自動的に実行します：
 
 1. **ローカルhornetチェック**
    - 未コミット変更の検出
@@ -85,43 +89,52 @@ git push origin <branch_name>
 
 ### 重要な注意事項
 
+**Git同期が有効な場合**:
 - **git push を忘れずに**: ローカルの変更は必ずプッシュしてから実行
 - **自動同期**: ga53pd01への手動git pullは不要（自動実行）
 - **同じブランチ使用**: ローカルとga53pd01は同じブランチで作業
+
+**Git同期が無効な場合**:
+- ⚠️ Git同期チェックをスキップ
+- ⚠️ ga53pd01で手動でgit pullする必要がある
+
+**共通**:
 - ローカルhornetでSerena MCPを使ってRTL解析・編集を行う
 - ga53pd01はビルド・エミュレーション実行専用
 
 ## 環境設定
 
-### .env ファイルによる環境カスタマイズ
+### .env ファイルによる環境カスタマイズ（オプション）
 
-**このプロジェクトは `.env` ファイルで環境変数を設定します。**
+**このプロジェクトでは `.env` ファイルでオプション機能を設定できます。**
 
-#### 初回セットアップ
+#### Git同期設定（オプション）
+
+Git同期を有効化する場合のみ、`.env`ファイルを作成します：
 
 ```bash
-# .env.example をコピーして自分の環境に合わせて編集
+# .env.exampleをコピー
 cp .env.example .env
-nano .env
+
+# Git同期を有効化
+echo "GIT_SYNC=true" >> .env
 ```
 
-#### 設定例
+#### 設定内容
+
+`.env`ファイルで設定可能な項目：
 
 ```bash
-# Remote SSH Configuration
-REMOTE_HOST=ga53pd01
-REMOTE_USER=your_username
-PROJECT_NAME=your_project_name
-
-# Bastion Configuration
-BASTION_HOST=10.108.64.1
-BASTION_USER=${REMOTE_USER}
+# Git Synchronization (Optional)
+# デフォルト: 無効（.envファイルが無い場合もOFF）
+# 有効化: GIT_SYNC=true（大文字小文字区別なし）
+GIT_SYNC=true
 ```
 
 #### 重要事項
 - `.env` ファイルは `.gitignore` に含まれており、Git管理対象外
-- 各ユーザーが自分の環境に合わせて設定
-- スクリプトは `.env` から環境変数を自動読み込み
+- デフォルトではGit同期は無効（.envファイル不要）
+- SSH設定は`~/.ssh/config`から自動取得
 
 ## 重要な開発ルール
 
