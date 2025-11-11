@@ -130,15 +130,17 @@ cd palladium-automation
 git clone https://github.com/tier4/hornet.git
 ```
 
-### 4. MCP設定
+### 4. MCP設定（オプション）
 
-**重要**: MCPサーバーは`palladium-automation`ディレクトリで実行してください。
+MCPサーバーを使用すると、RTL解析やドキュメント参照が可能になります。
+
+**注意**: MCPサーバーは`palladium-automation`ディレクトリで実行してください。
 
 ```bash
 cd ~/palladium-automation
 ```
 
-#### Serena MCP - Verilog/SystemVerilog解析
+#### Serena MCP - Verilog/SystemVerilog解析（オプション）
 
 ```bash
 claude-serena
@@ -149,7 +151,7 @@ claude-serena
 
 詳細は [docs/setup.md](docs/setup.md) を参照してください。
 
-#### Playwright MCP - ブラウザ自動化
+#### Playwright MCP - ブラウザ自動化（オプション）
 
 ```bash
 claude mcp add playwright npx @playwright/mcp@latest

@@ -220,15 +220,17 @@ palladium-automation/
 chmod +x scripts/claude_to_ga53pd01.sh
 ```
 
-### 6. MCP設定
+### 6. MCP設定（オプション）
 
-**重要**: MCPサーバーは`palladium-automation`ディレクトリで実行してください。
+MCPサーバーを使用すると、RTL解析やドキュメント参照が可能になります。
+
+**注意**: MCPサーバーは`palladium-automation`ディレクトリで実行してください。
 ~ 直下にpalladium-automationを入れた場合、
 ```bash
 cd ~/palladium-automation
 ```
 
-#### Serena MCP - Verilog/SystemVerilog解析
+#### Serena MCP - Verilog/SystemVerilog解析（オプション）
 
 RTL解析機能が使えるようになります。
 
@@ -261,7 +263,7 @@ claude-serena
 - シンボルベース検索（モジュール、関数等）
 - RTLコードの構造解析
 
-#### Playwright MCP - ブラウザ自動化
+#### Playwright MCP - ブラウザ自動化（オプション）
 
 Cadence Supportサイトのドキュメント参照ができるようにします。
 
