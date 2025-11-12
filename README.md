@@ -44,7 +44,6 @@ Cadenceのポリシーにより、**Palladiumエミュレーション環境（�
 
 - ✅ **Hornet統合**: hornetプロジェクトをgit cloneで組み込み
 - ✅ **Serena MCP**: Verilog/SystemVerilogのシンボルベース解析
-- ✅ **自動Git同期（オプション）**: ローカルとga53pd01のhornetを自動同期・検証
 - ✅ **SSH同期実行方式**: 高速（2-3秒）・シンプル・GUI操作不要
 - ✅ **リアルタイム出力**: 実行中の出力をその場で確認
 - ✅ **ローカルアーカイブ**: `.archive/YYYYMM/` に自動保存
@@ -144,7 +143,7 @@ ssh ga53pd01 'hostname'
 
 ### オプション機能
 
-オプション機能（Git同期・MCP設定）については [docs/optional_features.md](docs/optional_features.md) を参照してください。
+オプション機能（MCP設定）については [docs/optional_features.md](docs/optional_features.md) を参照してください。
 
 ## ブランチ戦略
 
@@ -244,12 +243,8 @@ Claude Codeに自然言語で指示することで、コミット・プッシュ
 1. **変更確認** - `git status`, `git diff`で変更を確認
 2. **コミットメッセージ案の提示** - ユーザーが確認・修正可能
 3. **コミット＆プッシュ** - ローカルの変更をリモートにプッシュ
-4. **Git同期検証** - `claude_to_ga53pd01.sh`がローカルとリモートを自動検証
-   - ✓ 未コミット変更なし
-   - ✓ 未プッシュコミットなし
-   - ✓ upstream設定済み
-5. **リモート実行** - ga53pd01で`git pull` → `scripts/ga53pd01_task.sh`実行
-6. **結果保存** - ローカルアーカイブに自動保存
+4. **リモート実行** - ga53pd01で`scripts/ga53pd01_task.sh`実行
+5. **結果保存** - ローカルアーカイブに自動保存
 
 **注意**: `scripts/ga53pd01_task.sh`を事前に作成しておく必要があります（上記「初回セットアップ」参照）。
 

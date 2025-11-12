@@ -581,7 +581,7 @@ cat workspace/etx_results/.archive/202511/khenmi_20251108_183841_test_connection
 
 ---
 
-オプション機能（Git同期・MCP設定）については [docs/optional_features.md](optional_features.md) を参照してください。
+オプション機能（MCP設定）については [docs/optional_features.md](optional_features.md) を参照してください。
 
 ## 参考資料
 
