@@ -8,6 +8,31 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_debug() {
+    if [ "${DEBUG:-0}" = "1" ]; then
+        echo -e "${BLUE}[DEBUG]${NC} $1"
+    fi
+}
+
 # ~/.ssh/configからREMOTE_USERを取得
 get_ssh_user() {
     local host="$1"
@@ -38,31 +63,6 @@ REMOTE_HOST="${REMOTE_HOST:-ga53pd01}"
 REMOTE_USER="${REMOTE_USER:-$(get_ssh_user ${REMOTE_HOST})}"
 PROJECT_NAME="${PROJECT_NAME:-tierivemu}"
 ARCHIVE_DIR="workspace/etx_results/.archive"
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-log_debug() {
-    if [ "${DEBUG:-0}" = "1" ]; then
-        echo -e "${BLUE}[DEBUG]${NC} $1"
-    fi
-}
 
 # 使用方法
 usage() {
